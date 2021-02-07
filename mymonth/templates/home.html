@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+{% block content %}
+
+{% for day in days %}
+    <div>{{ day.id.strftime('%Y-%m-%d') }} {{ day.ds }}  {{ day.dev }}  {{ day.ge }}  {{ day.alk }}</div>
+
+{% endfor %}
+
+{% endblock content %}
