@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<table>
+    <form method="POST" action="">
+    {{ form_day.hidden_tag() }}
+        <tr>
+            <th>{{ form_day.id.label }}</th>
+            <th>{{ form_day.ds.label }}</th>
+            <th>{{ form_day.dev.label }}</th>
+            <th>{{ form_day.pol.label }}</th>
+            <th>{{ form_day.ge.label }}</th>
+            <th>{{ form_day.crt.label }}</th>
+            <th>{{ form_day.hs.label }}</th>
+            <th>{{ form_day.alk.label }}</th>
+        </tr>
+        <tr>
+            <th>{{day.id}}</th>
+            <td>{{ form_day.ds(style="width: 80px", value=f_string_from_duration(day.ds)) }}</td>
+            <td>{{ form_day.dev(style="width: 80px", value=f_string_from_duration(day.dev)) }}</td>
+            <td>{{ form_day.pol(style="width: 80px", value=f_string_from_duration(day.pol)) }}</td>
+            <td>{{ form_day.ge(style="width: 80px", value=f_string_from_duration(day.ge)) }}</td>
+            <td>{{ form_day.crt(style="width: 80px", value=f_string_from_duration(day.crt)) }}</td>
+            <td>{{ form_day.hs(style="width: 80px", value=f_string_from_duration(day.hs)) }}</td>
+            <td>{{ form_day.alk(style="width: 80px", value=f_string_from_float(day.alk)) }}</td>
+            <td>{{ form_day.submit(class="btn_edit_day_save") }}</td>
+        </tr>
+    </form>
+</table>
+
+{% endblock content %}

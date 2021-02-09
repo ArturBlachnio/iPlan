@@ -14,19 +14,14 @@
     </tr>
 {% for day in days %}
     <tr>
-        <th>{{ day.id.strftime('%Y-%m-%d') }}</th>
-        <td>{{ day.ds }}</td>
-        <td>{{ day.dev }}</td>
-        <td>{{ day.pol }}</td>
-        <td>{{ day.ge }}</td>
-        <td>{{ day.crt }}</td>
-        <td>{{ day.hs }}</td>
-        
-        {% if day.alk %}
-        <td>{{ day.alk }}</td>
-        {% else%}
-        <td></td>
-        {% endif %}
+        <th><a href="{{url_for('edit_day', id_day=day.id) }}">{{ day.id.strftime('%Y-%m-%d') }}</a></th>
+        <td>{{ f_string_from_duration(day.ds) }}</td>
+        <td>{{ f_string_from_duration(day.dev) }}</td>
+        <td>{{ f_string_from_duration(day.pol) }}</td>
+        <td>{{ f_string_from_duration(day.ge) }}</td>
+        <td>{{ f_string_from_duration(day.crt) }}</td>
+        <td>{{ f_string_from_duration(day.hs) }}</td>
+        <td>{{ f_string_from_float(day.alk) }}</td>
     </tr>
 
 {% endfor %}
