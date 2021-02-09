@@ -1,9 +1,35 @@
 {% extends "layout.html" %}
 {% block content %}
 
+<table>
+    <tr>
+        <th>Date</th>
+        <th>Data Science</th>
+        <th>Developer</th>
+        <th>Poliglote</th>
+        <th>Gentleman Explorer</th>
+        <th>Create, Think, Read</th>
+        <th>Home, Son</th>
+        <th>SJA</th>
+    </tr>
 {% for day in days %}
-    <div>{{ day.id.strftime('%Y-%m-%d') }} {{ day.ds }}  {{ day.dev }}  {{ day.ge }}  {{ day.alk }}</div>
+    <tr>
+        <th>{{ day.id.strftime('%Y-%m-%d') }}</th>
+        <td>{{ day.ds }}</td>
+        <td>{{ day.dev }}</td>
+        <td>{{ day.pol }}</td>
+        <td>{{ day.ge }}</td>
+        <td>{{ day.crt }}</td>
+        <td>{{ day.hs }}</td>
+        
+        {% if day.alk %}
+        <td>{{ day.alk }}</td>
+        {% else%}
+        <td></td>
+        {% endif %}
+    </tr>
 
 {% endfor %}
+</table>
 
 {% endblock content %}
