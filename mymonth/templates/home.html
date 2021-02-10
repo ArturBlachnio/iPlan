@@ -4,26 +4,37 @@
 <table>
     <tr>
         <th>Date</th>
+        <th>Hours</th>
         <th>Data Science</th>
         <th>Developer</th>
         <th>Poliglote</th>
         <th>Gentleman Explorer</th>
         <th>Create, Think, Read</th>
         <th>Home, Son</th>
+        <th>Total Productive</th>
+        <th>% of Target</th>
+        <th>% cum</th>
+        <th>Total Negative</th>
         <th>SJA</th>
+        <th>ML cum avg</th>
     </tr>
 {% for day in days %}
     <tr>
-        <th><a href="{{url_for('edit_day', id_day=day.id) }}">{{ day.id.strftime('%Y-%m-%d') }}</a></th>
+        <th><a href="{{url_for('edit_day', id_day=day.id) }}">{{ day.id.strftime('%b %e') }}</a></th>
+        <td>{{ f_string_from_duration(day.s_TargetHours) }}</td>
         <td>{{ f_string_from_duration(day.ds) }}</td>
         <td>{{ f_string_from_duration(day.dev) }}</td>
         <td>{{ f_string_from_duration(day.pol) }}</td>
         <td>{{ f_string_from_duration(day.ge) }}</td>
         <td>{{ f_string_from_duration(day.crt) }}</td>
         <td>{{ f_string_from_duration(day.hs) }}</td>
+        <td>{{ f_string_from_duration(day.s_TotalProductive) }}</td>
+        <td>{{ '{:0.0%}'.format(day.s_PercOfTarget) }}</td>
+        <td>{{ '{:0.0%}'.format(day.cum_PercOfTarget) }}</td>
+        <td>{{ f_string_from_duration(day.s_TotalNegative) }}</td>
         <td>{{ f_string_from_float(day.alk) }}</td>
+        <td>{{ '{:0,.0f}'.format(day.cum_alk) }}</td>
     </tr>
-
 {% endfor %}
 </table>
 

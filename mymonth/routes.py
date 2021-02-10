@@ -3,9 +3,9 @@ from mymonth import db
 from mymonth import app
 from mymonth.forms import DayEditForm
 from mymonth.models import Days
-from mymonth.utils import get_month_days, string_from_duration, duration_from_string, string_from_float, float_from_string
+from mymonth.utils import get_month_days, string_from_duration, duration_from_string, string_from_float, float_from_string, get_target_productive_hours_per_day
 
-from datetime import date
+from datetime import date, timedelta
 
  
 REF_DATE = date(2021, 2, 2)
@@ -30,6 +30,40 @@ def home():
         db.session.commit()
     
     days = Days.query.filter(Days.id >= month_start).filter(Days.id <= month_end).all()
+    
+    # Extra fields to display
+    cum_TargetHours = timedelta()
+    cum_TotalProductive = timedelta()
+    cum_TotalNegative = timedelta()
+    cum_alk = 0
+    for i, day in enumerate(days, start=1):
+        # Target Productive Hours
+        day.s_TargetHours = get_target_productive_hours_per_day(day.id)
+
+        # Total Productive Time
+        day.s_TotalProductive = timedelta(seconds=0)
+        for col in ['ds', 'dev', 'pol', 'ge', 'crt', 'hs']:
+            value = getattr(day, col)
+            if value is not None:
+                day.s_TotalProductive += value
+
+        # Total Negative from Alk
+        day.s_TotalNegative = timedelta(seconds=0)
+        if day.alk is not None:
+            day.s_TotalNegative = max(day.alk - 2.86, 0)*timedelta(minutes=20)
+            cum_alk += day.alk
+
+        # % of target
+        day.s_PercOfTarget = (day.s_TotalProductive - day.s_TotalNegative) / day.s_TargetHours 
+
+        # Cummulative values 
+        cum_TargetHours += day.s_TargetHours
+        cum_TotalProductive += day.s_TotalProductive
+        cum_TotalNegative += day.s_TotalNegative
+        day.cum_PercOfTarget = (cum_TotalProductive - cum_TotalNegative) / cum_TargetHours
+        
+        day.cum_alk = (cum_alk / i) / 7.8 * 750
+
     return render_template('home.html', days=days, f_string_from_duration=string_from_duration, f_string_from_float=string_from_float)
 
 
