@@ -5,9 +5,10 @@ from mymonth.forms import DayEditForm
 from mymonth.models import Days
 from mymonth.utils import get_month_days, string_from_duration, duration_from_string, string_from_float, float_from_string, get_target_productive_hours_per_day
 
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
+import pandas as pd
+import os
 
- 
 REF_DATE = date(2021, 2, 2)
 
 
@@ -86,3 +87,33 @@ def edit_day(id_day):
         return redirect(url_for('home'))
     return render_template('edit_day.html', form_day=form_day, day=day, f_string_from_duration=string_from_duration, f_string_from_float=string_from_float)
 
+
+@app.route('/export_to_excel')
+def export_db():
+    df = pd.read_sql_table('days', db.engine)
+    # Change columns type from timedelta/datetime to string
+    for col in ['ds', 'dev', 'pol', 'ge', 'crt', 'hs']:
+        df[col] = df[col].apply(string_from_duration)
+    df.sort_values(by='id').to_excel(os.path.join('mymonth', 'static', 'initial_data', f'export_{datetime.now().strftime("%Y%m%d%H%M%S")}.xlsx'), index=False, freeze_panes=(1, 0))
+    return redirect(url_for('home'))
+
+
+@app.route('/import_from_excel')
+def import_db():
+    df = pd.read_excel(os.path.join('mymonth', 'static', 'initial_data', 'import_me.xlsx'))
+    # Change columns type from string to timedelta (stored as datetime)
+    for col in ['ds', 'dev', 'pol', 'ge', 'crt', 'hs']:
+        df[col] = df[col].fillna('').apply(duration_from_string)
+
+    # Overwrite database with new values
+    all_current_days = Days.query.all()
+    for day in all_current_days:
+        db.session.delete(day)
+    db.session.commit()
+    # db.drop_all()
+    # db.create_all()
+    for index, serie in df.iterrows():
+        db.session.add(Days(id=serie['id'], ds=serie['ds'], dev=serie['dev'], pol=serie['pol'], ge=serie['ge'], crt=serie['crt'], hs=serie['hs'], alk=serie['alk']))
+    db.session.commit()
+
+    return redirect(url_for('home'))

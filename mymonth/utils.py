@@ -1,7 +1,7 @@
 from calendar import monthrange
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 import re
-
+from pandas import NaT
 
 def get_month_days(reference_date):
     """Returns: first, last and all days of a month of reference date."""
@@ -34,7 +34,11 @@ def string_from_duration(x):
     """ Converts datatime.timedelta into string
     Function is used to update plan and actual of task model
     """
-    if x is None or x.total_seconds() == 0:
+    # Convert to timedelta if instance of datetime
+    if isinstance(x, datetime):
+        x = x - datetime(1970, 1, 1)
+    
+    if x is None or x is NaT or x.total_seconds() == 0:
         return ''
 
     total_seconds = x.total_seconds()
