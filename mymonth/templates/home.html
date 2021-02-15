@@ -1,5 +1,12 @@
 {% extends "layout.html" %}
 {% block content %}
+<form method="POST" action="">
+{{ form_settings.hidden_tag() }}
+{{ form_settings.current_month_date.label }}    
+{{ form_settings.current_month_date(value=settings.current_month_date) }}    
+{{ form_settings.submit }}    
+
+</form>
 
 <table>
     <tr>

@@ -12,3 +12,8 @@ class DayEditForm(FlaskForm):
     hs = StringField(label='Home, Son')
     alk = StringField(label='SJA')
     submit = SubmitField(label='Save')
+
+
+class EditSettings(FlaskForm):
+    current_month_date = DateField(label="Pick Month")
+    submit = SubmitField(label='Save')

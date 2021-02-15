@@ -1,19 +1,33 @@
 from flask import render_template, request, redirect, url_for
 from mymonth import db
 from mymonth import app
-from mymonth.forms import DayEditForm
-from mymonth.models import Days
+from mymonth.forms import DayEditForm, EditSettings
+from mymonth.models import Days, Settings
 from mymonth.utils import get_month_days, string_from_duration, duration_from_string, string_from_float, float_from_string, get_target_productive_hours_per_day
 
 from datetime import date, timedelta, datetime
 import pandas as pd
 import os
 
-REF_DATE = date(2021, 2, 2)
+
+def set_initial_values():
+    """ Sets initial values. E.g if Settings db is empty - set reference days to today. """
+    if Settings.query.first() is None:
+        setting1 = Settings(current_month_date=date.today())
+        db.session.add(setting1)
+        print(f"Initial reference date created and set to {setting1.current_month_date}.")
+    db.session.commit()
+
+set_initial_values()
 
 
-@app.route('/')
+
+# REF_DATE = date(2021, 2, 2)
+
+
+@app.route('/', methods=['GET', 'POST'])
 def home():
+    REF_DATE = Settings.query.first().current_month_date
     month_start, month_end, month_all_days = get_month_days(REF_DATE)
 
     # Add a day to database if it does not exist yet. 
@@ -66,8 +80,16 @@ def home():
         if day.id == date.today():
             day.style_today_tr_hd = "today_header"
             day.style_today_tr_td = "today_cell"
-            
-    return render_template('home.html', days=days, f_string_from_duration=string_from_duration, f_string_from_float=string_from_float)
+        
+    # Change current month settings
+    form_settings = EditSettings()
+    settings = Settings.query.first()
+    if request.method == 'POST':
+        settings.current_month_date = form_settings.current_month_date.data
+        db.session.commit()
+        return redirect(url_for('home'))
+
+    return render_template('home.html', days=days, f_string_from_duration=string_from_duration, f_string_from_float=string_from_float, form_settings=form_settings, settings=settings)
 
 
 @app.route('/day/edit/<id_day>', methods=['GET', 'POST'])

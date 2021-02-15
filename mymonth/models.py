@@ -14,3 +14,13 @@ class Days(db.Model):
 
     def __repr__(self):
         return f"Days(id={self.id}, ds={self.ds}, dev={self.dev}, pol={self.pol}, ge={self.ge}, crt={self.crt}, hs={self.hs}, alk={self.alk})"
+
+
+class Settings(db.Model):
+    """General settings for application"""
+    id = db.Column(db.Integer, primary_key = True)
+    current_month_date = db.Column(db.Date)
+
+    def __repr__(self):
+        return f"Settings(id={self.id}, current_month_date={self.current_month_date})"
+
