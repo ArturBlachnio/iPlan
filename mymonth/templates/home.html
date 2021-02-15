@@ -21,10 +21,10 @@
 {% for day in days %}
     <tr>
         <th class="day_date {{ day.style_today_tr_hd }}"><a href="{{ url_for('edit_day', id_day=day.id) }}">{{ day.id.strftime('%b %e') }}</a></th>
+        <td class="{{ day.style_today_tr_td}}">{{ f_string_from_duration(day.s_TargetHours) }}</td>
         <td class="{{ day.style_today_tr_td}}">{{ f_string_from_duration(day.ds) }}</td>
         <td class="{{ day.style_today_tr_td}}">{{ f_string_from_duration(day.dev) }}</td>
         <td class="{{ day.style_today_tr_td}}">{{ f_string_from_duration(day.pol) }}</td>
-        <td class="{{ day.style_today_tr_td}}">{{ f_string_from_duration(day.s_TargetHours) }}</td>
         <td class="{{ day.style_today_tr_td}}">{{ f_string_from_duration(day.ge) }}</td>
         <td class="{{ day.style_today_tr_td}}">{{ f_string_from_duration(day.crt) }}</td>
         <td class="{{ day.style_today_tr_td}}">{{ f_string_from_duration(day.hs) }}</td>
