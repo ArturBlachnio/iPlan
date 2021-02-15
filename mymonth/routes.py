@@ -12,18 +12,12 @@ import os
 REF_DATE = date(2021, 2, 2)
 
 
-@app.route('/home')
-def main():
-    days = Days.query.all()
-    return render_template('home.html', days=days)
-
-
 @app.route('/')
 def home():
     month_start, month_end, month_all_days = get_month_days(REF_DATE)
 
-    days = Days.query.filter(Days.id >= month_start).filter(Days.id <= month_end).all()
     # Add a day to database if it does not exist yet. 
+    days = Days.query.filter(Days.id >= month_start).filter(Days.id <= month_end).all()
     days_in_db = [day.id for day in days]
     for day_index in month_all_days:
         if day_index not in days_in_db:
@@ -51,7 +45,7 @@ def home():
         # Total Negative from Alk
         day.s_TotalNegative = timedelta(seconds=0)
         if day.alk is not None:
-            day.s_TotalNegative = max(day.alk - 2.86, 0)*timedelta(minutes=20)
+            day.s_TotalNegative = max(day.alk - 2.86, 0) * timedelta(minutes=20)
             cum_alk += day.alk
 
         # % of target
@@ -65,6 +59,14 @@ def home():
         
         day.cum_alk = (cum_alk / i) / 7.8 * 750
 
+        # Styles:
+        # Rows with today's date
+        day.style_today_tr_hd = ""
+        day.style_today_tr_td = ""
+        if day.id == date.today():
+            day.style_today_tr_hd = "today_header"
+            day.style_today_tr_td = "today_cell"
+            
     return render_template('home.html', days=days, f_string_from_duration=string_from_duration, f_string_from_float=string_from_float)
 
 
@@ -110,8 +112,7 @@ def import_db():
     for day in all_current_days:
         db.session.delete(day)
     db.session.commit()
-    # db.drop_all()
-    # db.create_all()
+
     for index, serie in df.iterrows():
         db.session.add(Days(id=serie['id'], ds=serie['ds'], dev=serie['dev'], pol=serie['pol'], ge=serie['ge'], crt=serie['crt'], hs=serie['hs'], alk=serie['alk']))
     db.session.commit()

@@ -1,5 +1,4 @@
 from mymonth import db
-from datetime import date
 
 
 class Days(db.Model):

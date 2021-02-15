@@ -7,8 +7,8 @@ def get_month_days(reference_date):
     """Returns: first, last and all days of a month of reference date."""
     first_day = date(year=reference_date.year, month=reference_date.month, day=1)
     last_day = date(year=reference_date.year, month=reference_date.month, day=monthrange(year=reference_date.year, month=reference_date.month)[1])
-    days_in_month = (last_day - first_day).days + 2
-    all_days = [date(year=first_day.year, month=first_day.month, day=day) for day in range(1, days_in_month)]
+    days_in_month = (last_day - first_day).days + 1
+    all_days = [date(year=first_day.year, month=first_day.month, day=day) for day in range(1, days_in_month + 1)]
     return first_day, last_day, all_days
 
 
@@ -34,7 +34,7 @@ def string_from_duration(x):
     """ Converts datatime.timedelta into string
     Function is used to update plan and actual of task model
     """
-    # Convert to timedelta if instance of datetime
+    # Convert to timedelta if instance of datetime (in mymonth db, intervals are kept as datetime objects starting at 1970-1-1)
     if isinstance(x, datetime):
         x = x - datetime(1970, 1, 1)
     
@@ -84,5 +84,5 @@ def float_from_string(x):
 def get_target_productive_hours_per_day(input_date):
     """ Calculates number of productive hours per day. Returns timedelta object"""
     weekday_nb = input_date.weekday()
-    dict_productive_hours_per_weekday = {0: 2, 1: 2, 2: 2, 3: 2, 4: 2, 5: 4, 6: 4}
+    dict_productive_hours_per_weekday = {0: 2, 1: 2, 2: 2, 3: 2, 4: 2, 5: 4, 6: 4}  # Saturday (5) and Sunday (6) get 4hrs, rest (0-4) 2hrs
     return timedelta(hours=dict_productive_hours_per_weekday.get(weekday_nb))
