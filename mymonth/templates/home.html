@@ -42,6 +42,7 @@
         <td class="{{ day.style_today_tr_td}}">{{ '{:0,.0f}'.format(day.cum_alk) }}</td>
     </tr>
 {% endfor %}
+<!-- Summary field -->
     <tr>
         <th>Total</th>
         <th>{{ f_string_from_duration(row_with_totals.targethours, 'hm') }}</th>
@@ -54,5 +55,10 @@
         <th>{{ f_string_from_duration(row_with_totals.totalproductive, 'hm') }}</th>
     </tr>
 </table>
-
+Todo:
+<ul>   
+    <li>Now focus on building form with targets per category - new model and form</li>
+    <li>Extra summary row with % of target achievement</li>
+    <li>mymonth.db will be untracked from now on; make a extra script later on detecting id db does not exist and creates it automatically useing impoer from excel and deafault values.</li>
+</ul>
 {% endblock content %}
