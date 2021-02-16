@@ -21,10 +21,6 @@ def set_initial_values():
 set_initial_values()
 
 
-
-# REF_DATE = date(2021, 2, 2)
-
-
 @app.route('/', methods=['GET', 'POST'])
 def home():
     REF_DATE = Settings.query.first().current_month_date
@@ -42,18 +38,21 @@ def home():
     
     # Extra fields to display
     cum_TargetHours = timedelta()
+    row_with_totals = {'ds': timedelta(), 'dev': timedelta(), 'pol': timedelta(), 'ge': timedelta(), 'crt': timedelta(), 'hs': timedelta()}
     cum_TotalProductive = timedelta()
     cum_TotalNegative = timedelta()
     cum_alk = 0
+
     for i, day in enumerate(days, start=1):
         # Target Productive Hours
         day.s_TargetHours = get_target_productive_hours_per_day(day.id)
 
         # Total Productive Time
         day.s_TotalProductive = timedelta(seconds=0)
-        for col in ['ds', 'dev', 'pol', 'ge', 'crt', 'hs']:
+        for col in row_with_totals:
             value = getattr(day, col)
             if value is not None:
+                row_with_totals[col] += value
                 day.s_TotalProductive += value
 
         # Total Negative from Alk
@@ -73,6 +72,7 @@ def home():
         
         day.cum_alk = (cum_alk / i) / 7.8 * 750
 
+
         # Styles:
         # Rows with today's date
         day.style_today_tr_hd = ""
@@ -81,6 +81,9 @@ def home():
             day.style_today_tr_hd = "today_header"
             day.style_today_tr_td = "today_cell"
         
+    row_with_totals['targethours'] = cum_TargetHours
+    row_with_totals['totalproductive'] = cum_TotalProductive
+
     # Change current month settings
     form_settings = EditSettings()
     settings = Settings.query.first()
@@ -89,7 +92,8 @@ def home():
         db.session.commit()
         return redirect(url_for('home'))
 
-    return render_template('home.html', days=days, f_string_from_duration=string_from_duration, f_string_from_float=string_from_float, form_settings=form_settings, settings=settings)
+    return render_template('home.html', days=days, f_string_from_duration=string_from_duration, 
+                            f_string_from_float=string_from_float, form_settings=form_settings, settings=settings, row_with_totals=row_with_totals)
 
 
 @app.route('/day/edit/<id_day>', methods=['GET', 'POST'])

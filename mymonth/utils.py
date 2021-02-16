@@ -30,7 +30,7 @@ def duration_from_string(x):
     return timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
 
 
-def string_from_duration(x):
+def string_from_duration(x, output_format=None):
     """ Converts datatime.timedelta into string
     Function is used to update plan and actual of task model
     """
@@ -40,6 +40,13 @@ def string_from_duration(x):
     
     if x is None or x is NaT or x.total_seconds() == 0:
         return ''
+
+    if output_format == 'hm':
+        total_seconds = x.total_seconds()
+        hours = total_seconds // 3600
+        total_seconds -= hours * 3600
+        minutes = total_seconds // 60
+        return f'{int(hours)}h {int(minutes)}m'
 
     total_seconds = x.total_seconds()
     days = total_seconds // 86400
@@ -66,6 +73,7 @@ def string_from_duration(x):
         if item[0] != 0:
             outcome += f'{int(item[0])}{item[1]} '
     return outcome[:-1]
+
 
 def string_from_float(x):
     outcome = x
