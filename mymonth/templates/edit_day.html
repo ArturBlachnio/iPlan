@@ -25,7 +25,31 @@
             <td>{{ form_day.alk(style="width: 80px", value=f_string_from_float(day.alk)) }}</td>
             <td>{{ form_day.submit(class="btn_edit_day_save") }}</td>
         </tr>
+        <!-- SJA calculation form -->
+        <tr>
+            <td></td><td></td><td></td><td></td><td></td>
+            <td>{{ form_calc_sja.ml1.label }}</td>
+            <td>{{ form_calc_sja.perc1.label }}</td>
+            <td>{{ form_calc_sja.submit }}</td>
+        </tr>
+        <tr>
+            <td></td><td></td><td></td><td></td><td></td>
+            <td>{{ form_calc_sja.ml1(style="width: 80px") }}</td>
+            <td>{{ form_calc_sja.perc1(style="width: 80px") }}</td>
+            <td>{{ sja_values.sja1 }}</td>
+        </tr>
+        <tr>
+            <td></td><td></td><td></td><td></td><td></td>
+            <td>{{ form_calc_sja.ml2(style="width: 80px") }}</td>
+            <td>{{ form_calc_sja.perc2(style="width: 80px") }}</td>
+            <td>{{ sja_values.sja2 }}</td>
+        </tr>
+        <tr>
+            <td></td><td></td><td></td><td></td><td></td>
+            <td>{{ form_calc_sja.ml3(style="width: 80px") }}</td>
+            <td>{{ form_calc_sja.perc3(style="width: 80px") }}</td>
+            <td>{{ sja_values.sja3 }}</td>
+        </tr>
     </form>
 </table>
-
 {% endblock content %}

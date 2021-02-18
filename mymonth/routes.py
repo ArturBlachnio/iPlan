@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, url_for
 from mymonth import db
 from mymonth import app
-from mymonth.forms import DayEditForm, EditSettings
+from mymonth.forms import DayEditForm, EditSettings, CalculatorSJAForm
 from mymonth.models import Days, Settings
 from mymonth.utils import get_month_days, string_from_duration, duration_from_string, string_from_float, float_from_string, get_target_productive_hours_per_day
 
@@ -101,19 +101,31 @@ def edit_day(id_day):
     
     day = Days.query.get_or_404(date.fromisoformat(id_day))
     form_day = DayEditForm()
-    
-    if request.method == 'POST':
-        day.ds = duration_from_string(form_day.ds.data)
-        day.dev = duration_from_string(form_day.dev.data)
-        day.pol = duration_from_string(form_day.pol.data)
-        day.ge = duration_from_string(form_day.ge.data)
-        day.crt = duration_from_string(form_day.crt.data)
-        day.hs = duration_from_string(form_day.hs.data)
-        day.alk = float_from_string(form_day.alk.data)
+    form_calc_sja = CalculatorSJAForm()
+    sja_values = dict(zip(['sja1', 'sja2', 'sja3'], [0, 0, 0]))
 
-        db.session.commit()
-        return redirect(url_for('home'))
-    return render_template('edit_day.html', form_day=form_day, day=day, f_string_from_duration=string_from_duration, f_string_from_float=string_from_float)
+    if request.method == 'POST':
+        if request.form.get("submit") == 'Calculate SJA':
+            print("Just calcualted SJA")
+            sja1 = float(form_calc_sja.ml1.data * (form_calc_sja.perc1.data / 100)) / 12.5
+            sja2 = float(form_calc_sja.ml2.data * (form_calc_sja.perc2.data / 100)) / 12.5
+            sja3 = float(form_calc_sja.ml3.data * (form_calc_sja.perc3.data / 100)) / 12.5
+            day.alk = round(sum([sja1, sja2, sja3]), 1)
+            sja_values = dict(zip(['sja1', 'sja2', 'sja3'], [round(sja1, 2), round(sja2, 2), round(sja3, 2)]))
+            return render_template('edit_day.html', form_day=form_day, form_calc_sja=form_calc_sja, sja_values=sja_values, day=day, f_string_from_duration=string_from_duration, f_string_from_float=string_from_float)
+        else:
+            # print(request.form)
+            day.ds = duration_from_string(form_day.ds.data)
+            day.dev = duration_from_string(form_day.dev.data)
+            day.pol = duration_from_string(form_day.pol.data)
+            day.ge = duration_from_string(form_day.ge.data)
+            day.crt = duration_from_string(form_day.crt.data)
+            day.hs = duration_from_string(form_day.hs.data)
+            day.alk = float_from_string(form_day.alk.data)
+
+            db.session.commit()
+            return redirect(url_for('home'))
+    return render_template('edit_day.html', form_day=form_day, form_calc_sja=form_calc_sja, sja_values=sja_values, day=day, f_string_from_duration=string_from_duration, f_string_from_float=string_from_float)
 
 
 @app.route('/export_to_excel')

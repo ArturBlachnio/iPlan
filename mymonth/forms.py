@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
-from wtforms.fields.html5 import DateField
+from wtforms.fields.html5 import DateField, IntegerField, DecimalField
 
 class DayEditForm(FlaskForm):
     id = DateField(label='Date')
@@ -17,3 +17,13 @@ class DayEditForm(FlaskForm):
 class EditSettings(FlaskForm):
     current_month_date = DateField(label="Pick Month")
     submit = SubmitField(label='Save')
+
+
+class CalculatorSJAForm(FlaskForm):
+    ml1 = IntegerField(label="ml", default=0)
+    perc1 = DecimalField(label="%", default=13)
+    ml2 = IntegerField(label="ml", default=0)
+    perc2 = DecimalField(label="%", default=5)
+    ml3 = IntegerField(label="ml", default=0)
+    perc3 = DecimalField(label="%", default=12)
+    submit = SubmitField(label="Calculate SJA")
