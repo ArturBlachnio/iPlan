@@ -40,20 +40,23 @@
         <td class="{{ day.style_today_tr_td}}">{{ f_string_from_duration(day.s_TotalNegative) }}</td>
         <td class="{{ day.style_today_tr_td}}">{{ f_string_from_float(day.alk) }}</td>
         <td class="{{ day.style_today_tr_td}}">{{ '{:0,.0f}'.format(day.cum_alk) }}</td>
+        <td><meter style="width:40px" id="fuel" min="0" low="3.89" optimum="2.86" high="6" max="8" value="{{day.alk}}"></meter></td>
     </tr>
 {% endfor %}
 <!-- Summary field -->
-    <tr>
-        <th>Total</th>
-        <th>{{ f_string_from_duration(row_with_totals.targethours, 'hm') }}</th>
-        <th>{{ f_string_from_duration(row_with_totals.ds, 'hm') }}</th>
-        <th>{{ f_string_from_duration(row_with_totals.dev, 'hm') }}</th>
-        <th>{{ f_string_from_duration(row_with_totals.pol, 'hm') }}</th>
-        <th>{{ f_string_from_duration(row_with_totals.ge, 'hm') }}</th>
-        <th>{{ f_string_from_duration(row_with_totals.crt, 'hm') }}</th>
-        <th>{{ f_string_from_duration(row_with_totals.hs, 'hm') }}</th>
-        <th>{{ f_string_from_duration(row_with_totals.totalproductive, 'hm') }}</th>
-    </tr>
+    <tfoot>
+        <tr>
+            <th>Total</th>
+            <th>{{ f_string_from_duration(row_with_totals.targethours, 'hm') }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.ds, 'hm') }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.dev, 'hm') }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.pol, 'hm') }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.ge, 'hm') }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.crt, 'hm') }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.hs, 'hm') }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.totalproductive, 'hm') }}</th>
+        </tr>
+    </tfoot>
 </table>
 Todo:
 <ul>   
