@@ -1,24 +1,38 @@
 from flask import render_template, request, redirect, url_for
 from mymonth import db
 from mymonth import app
-from mymonth.forms import DayEditForm, EditSettings, CalculatorSJAForm
-from mymonth.models import Days, Settings
+from mymonth.forms import DayEditForm, EditSettings, CalculatorSJAForm, EditMonthTargetsForm
+from mymonth.models import Days, Settings, MonthlyTargets
 from mymonth.utils import get_month_days, string_from_duration, duration_from_string, string_from_float, float_from_string, get_target_productive_hours_per_day
 
 from datetime import date, timedelta, datetime
 import pandas as pd
 import os
+from artools.utils import show_attributes
+
+# show_attributes(MonthlyTargets.__tablename__)
+print(MonthlyTargets.__tablename__)
 
 
-def set_initial_values():
-    """ Sets initial values. E.g if Settings db is empty - set reference days to today. """
+def set_initial_db():
+    """Temporary solution for development. Checks if db exists. If not, creates it. Also sets initial values for current_month_date. 
+    E.g.: if Settings is empty - set reference day to today."""
+
+    if not os.path.exists('mymonth/mymonth.db'):
+        print(f"Database does not exist. Create in")
+        db.create_all()
+
     if Settings.query.first() is None:
-        setting1 = Settings(current_month_date=date.today())
-        db.session.add(setting1)
-        print(f"Initial reference date created and set to {setting1.current_month_date}.")
-    db.session.commit()
+        db.session.add(Settings(current_month_date=date.today()))
+        db.session.commit()
 
-set_initial_values()
+    if MonthlyTargets.query.first() is None:
+        id_month = date(year=date.today().year, month=date.today().month, day=1)
+        current_month_target = MonthlyTargets(id=id_month)
+        db.session.add(current_month_target)
+        db.session.commit()
+
+set_initial_db()
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -84,16 +98,27 @@ def home():
     row_with_totals['targethours'] = cum_TargetHours
     row_with_totals['totalproductive'] = cum_TotalProductive
 
+
     # Change current month settings
     form_settings = EditSettings()
     settings = Settings.query.first()
+    
+    # MonthlyTargets
+    monthlytargets = MonthlyTargets.query.get(date(year=settings.current_month_date.year, month=settings.current_month_date.month, day=1))
+    monthlytargets.ml = int(round(monthlytargets.alk / 7.8 * 750, 0))
+    monthlytargets.total_allocated = timedelta(seconds=sum([getattr(monthlytargets, hrscol).total_seconds() for hrscol in ['ds', 'dev', 'pol', 'ge', 'crt', 'hs']]))
+  
     if request.method == 'POST':
         settings.current_month_date = form_settings.current_month_date.data
+        # Check if monthly targets exist
+        targets_date = date(year=settings.current_month_date.year, month=settings.current_month_date.month, day=1)
+        if MonthlyTargets.query.get(targets_date) is None:
+            db.session.add(MonthlyTargets(id=targets_date))
         db.session.commit()
         return redirect(url_for('home'))
 
-    return render_template('home.html', days=days, f_string_from_duration=string_from_duration, 
-                            f_string_from_float=string_from_float, form_settings=form_settings, settings=settings, row_with_totals=row_with_totals)
+    return render_template('home.html', days=days, f_string_from_duration=string_from_duration, f_string_from_float=string_from_float, 
+                            form_settings=form_settings, settings=settings, monthlytargets=monthlytargets, row_with_totals=row_with_totals)
 
 
 @app.route('/day/edit/<id_day>', methods=['GET', 'POST'])
@@ -128,22 +153,53 @@ def edit_day(id_day):
     return render_template('edit_day.html', form_day=form_day, form_calc_sja=form_calc_sja, sja_values=sja_values, day=day, f_string_from_duration=string_from_duration, f_string_from_float=string_from_float)
 
 
+@app.route('/edit_month_target/<id_month>', methods=['GET', 'POST'])
+def edit_month_target(id_month):
+    # Get form
+    edit_month_targets_form = EditMonthTargetsForm()
+
+    monthly_targets = MonthlyTargets.query.get_or_404(date.fromisoformat(id_month))
+
+    if request.method == 'POST':
+        monthly_targets.ds = duration_from_string(edit_month_targets_form.ds.data)  
+        monthly_targets.dev = duration_from_string(edit_month_targets_form.dev.data) 
+        monthly_targets.pol = duration_from_string(edit_month_targets_form.pol.data) 
+        monthly_targets.ge = duration_from_string(edit_month_targets_form.ge.data) 
+        monthly_targets.crt = duration_from_string(edit_month_targets_form.crt.data) 
+        monthly_targets.hs = duration_from_string(edit_month_targets_form.hs.data) 
+        monthly_targets.alk = float_from_string(edit_month_targets_form.alk.data) 
+        db.session.commit() 
+        return redirect(url_for('home')) 
+
+    return render_template('edit_month_targets.html', edit_month_targets_form=edit_month_targets_form, 
+                            monthly_targets=monthly_targets, f_string_from_duration=string_from_duration, f_string_from_float=string_from_float)
+
+
 @app.route('/export_to_excel')
 def export_db():
-    df = pd.read_sql_table('days', db.engine)
+    df_days = pd.read_sql_table('days', db.engine)
+    df_monthlytargets = pd.read_sql_table('monthly_targets', db.engine)
+
     # Change columns type from timedelta/datetime to string
     for col in ['ds', 'dev', 'pol', 'ge', 'crt', 'hs']:
-        df[col] = df[col].apply(string_from_duration)
-    df.sort_values(by='id').to_excel(os.path.join('mymonth', 'static', 'initial_data', f'export_{datetime.now().strftime("%Y%m%d%H%M%S")}.xlsx'), index=False, freeze_panes=(1, 0))
+        df_days[col] = df_days[col].apply(string_from_duration)
+        df_monthlytargets[col] = df_monthlytargets[col].apply(string_from_duration)
+
+    excel_writer = pd.ExcelWriter(os.path.join('mymonth', 'static', 'initial_data', f'export_{datetime.now().strftime("%Y%m%d%H%M%S")}.xlsx'))
+    df_days.sort_values(by='id').to_excel(excel_writer, sheet_name='days', index=False, freeze_panes=(1, 0))
+    df_monthlytargets.sort_values(by='id').to_excel(excel_writer, sheet_name='monthly_targets', index=False, freeze_panes=(1, 0))
+    excel_writer.save()
     return redirect(url_for('home'))
 
 
 @app.route('/import_from_excel')
 def import_db():
-    df = pd.read_excel(os.path.join('mymonth', 'static', 'initial_data', 'import_me.xlsx'))
+    df_days = pd.read_excel(os.path.join('mymonth', 'static', 'initial_data', 'import_me.xlsx'), sheet_name='days')
+    df_monthlytargets = pd.read_excel(os.path.join('mymonth', 'static', 'initial_data', 'import_me.xlsx'), sheet_name='monthly_targets')
     # Change columns type from string to timedelta (stored as datetime)
     for col in ['ds', 'dev', 'pol', 'ge', 'crt', 'hs']:
-        df[col] = df[col].fillna('').apply(duration_from_string)
+        df_days[col] = df_days[col].fillna('').apply(duration_from_string)
+        df_monthlytargets[col] = df_monthlytargets[col].fillna('').apply(duration_from_string)
 
     # Overwrite database with new values
     all_current_days = Days.query.all()
@@ -151,8 +207,17 @@ def import_db():
         db.session.delete(day)
     db.session.commit()
 
-    for index, serie in df.iterrows():
+    for index, serie in df_days.iterrows():
         db.session.add(Days(id=serie['id'], ds=serie['ds'], dev=serie['dev'], pol=serie['pol'], ge=serie['ge'], crt=serie['crt'], hs=serie['hs'], alk=serie['alk']))
+    db.session.commit()
+
+    all_current_targets = MonthlyTargets.query.all()
+    for targets in all_current_targets:
+        db.session.delete(targets)
+    db.session.commit()
+
+    for index, serie in df_monthlytargets.iterrows():
+        db.session.add(MonthlyTargets(id=serie['id'], ds=serie['ds'], dev=serie['dev'], pol=serie['pol'], ge=serie['ge'], crt=serie['crt'], hs=serie['hs'], alk=serie['alk']))
     db.session.commit()
 
     return redirect(url_for('home'))

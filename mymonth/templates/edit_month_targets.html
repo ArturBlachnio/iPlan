@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<table>
+    <form method="POST" action="">
+    {{ edit_month_targets_form.hidden_tag() }}
+        <tr>
+            <th>{{ edit_month_targets_form.id.label }}</th>
+            <th>{{ edit_month_targets_form.ds.label }}</th>
+            <th>{{ edit_month_targets_form.dev.label }}</th>
+            <th>{{ edit_month_targets_form.pol.label }}</th>
+            <th>{{ edit_month_targets_form.ge.label }}</th>
+            <th>{{ edit_month_targets_form.crt.label }}</th>
+            <th>{{ edit_month_targets_form.hs.label }}</th>
+            <th>{{ edit_month_targets_form.alk.label }}</th>
+        </tr>
+        <tr>
+            <th>{{ monthly_targets.id.strftime("%Y %b") }}</th>
+            <td>{{ edit_month_targets_form.ds(style="width: 80px", value=f_string_from_duration(monthly_targets.ds)) }}</td>
+            <td>{{ edit_month_targets_form.dev(style="width: 80px", value=f_string_from_duration(monthly_targets.dev)) }}</td>
+            <td>{{ edit_month_targets_form.pol(style="width: 80px", value=f_string_from_duration(monthly_targets.pol)) }}</td>
+            <td>{{ edit_month_targets_form.ge(style="width: 80px", value=f_string_from_duration(monthly_targets.ge)) }}</td>
+            <td>{{ edit_month_targets_form.crt(style="width: 80px", value=f_string_from_duration(monthly_targets.crt)) }}</td>
+            <td>{{ edit_month_targets_form.hs(style="width: 80px", value=f_string_from_duration(monthly_targets.hs)) }}</td>
+            <td>{{ edit_month_targets_form.alk(style="width: 80px", value=f_string_from_float(monthly_targets.alk)) }}</td>
+            <td>{{ edit_month_targets_form.submit(class="btn_edit_day_save") }}</td>
+        </tr>
+    </form>
+</table>
+{% endblock content %}

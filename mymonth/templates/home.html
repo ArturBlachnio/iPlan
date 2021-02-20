@@ -6,7 +6,6 @@
     {{ form_settings.current_month_date(value=settings.current_month_date) }}    
     {{ form_settings.submit }}    
 </form>
-
 <table>
     <tr>
         <th>Date</th>
@@ -56,12 +55,33 @@
             <th>{{ f_string_from_duration(row_with_totals.hs, 'hm') }}</th>
             <th>{{ f_string_from_duration(row_with_totals.totalproductive, 'hm') }}</th>
         </tr>
+        <tr>
+            <th>Allocated</th>
+            <th>{{ f_string_from_duration(monthlytargets.total_allocated, 'hm') }}</th>
+            <th>{{ f_string_from_duration(monthlytargets.ds, 'hm') }}</th>
+            <th>{{ f_string_from_duration(monthlytargets.dev, 'hm') }}</th>
+            <th>{{ f_string_from_duration(monthlytargets.pol, 'hm') }}</th>
+            <th>{{ f_string_from_duration(monthlytargets.ge, 'hm') }}</th>
+            <th>{{ f_string_from_duration(monthlytargets.crt, 'hm') }}</th>
+            <th>{{ f_string_from_duration(monthlytargets.hs, 'hm') }}</th>
+            <th><a href="{{ url_for('edit_month_target', id_month=monthlytargets.id) }}">Edit</a></th>  
+            <th></th>
+            <th></th>
+            <th></th>         
+            <th>{{ monthlytargets.alk }}</th>         
+            <th>{{ monthlytargets.ml }}</th>         
+        </tr>
     </tfoot>
 </table>
 Todo:
 <ul>   
+    <li>{{monthlytargets}}</li>
     <li>Now focus on building form with targets per category - new model and form</li>
     <li>Extra summary row with % of target achievement</li>
     <li>mymonth.db will be untracked from now on; make a extra script later on detecting id db does not exist and creates it automatically useing impoer from excel and deafault values.</li>
 </ul>
+<footer>
+    <a href="{{ url_for('export_db')}}">Export to Excel</a>
+    <a href="{{ url_for('import_db')}}">Import from Excel</a>
+</footer>
 {% endblock content %}

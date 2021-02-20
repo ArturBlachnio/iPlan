@@ -27,3 +27,15 @@ class CalculatorSJAForm(FlaskForm):
     ml3 = IntegerField(label="ml", default=0)
     perc3 = DecimalField(label="%", default=12)
     submit = SubmitField(label="Calculate SJA")
+
+
+class EditMonthTargetsForm(FlaskForm):
+    id = DateField(label='Month')
+    ds = StringField(label='Data Science')
+    dev = StringField(label='Developer')
+    pol = StringField(label='Poliglote')
+    ge = StringField(label='Gentleman Explorer')
+    crt = StringField(label='Create, Think, Read')
+    hs = StringField(label='Home, Son')
+    alk = StringField(label='SJA')
+    submit = SubmitField(label='Save')
