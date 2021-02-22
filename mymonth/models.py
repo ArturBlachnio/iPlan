@@ -36,6 +36,7 @@ class MonthlyTargets(db.Model):
     crt = db.Column(db.Interval, default=timedelta())  # Create Read Think
     hs = db.Column(db.Interval, default=timedelta())   # Home Son
     alk = db.Column(db.Float, default=0.0)     # Alko
+    days0 = db.Column(db.Integer, default=0)     # Alko
 
     def __repr__(self):
-        return f"MonthlyTargets(id={self.id}, ds={self.ds}, dev={self.dev}, pol={self.pol}, ge={self.ge}, crt={self.crt}, hs={self.hs}, alk={self.alk})"
+        return f"MonthlyTargets(id={self.id}, ds={self.ds}, dev={self.dev}, pol={self.pol}, ge={self.ge}, crt={self.crt}, hs={self.hs}, alk={self.alk}, days0={self.days0})"

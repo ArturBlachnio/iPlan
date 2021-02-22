@@ -38,4 +38,5 @@ class EditMonthTargetsForm(FlaskForm):
     crt = StringField(label='Create, Think, Read')
     hs = StringField(label='Home, Son')
     alk = StringField(label='SJA')
+    days0 = StringField(label='Days0')
     submit = SubmitField(label='Save')

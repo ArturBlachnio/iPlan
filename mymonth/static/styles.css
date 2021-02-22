@@ -30,5 +30,6 @@ th {
 }
 
 .today_cell {
-    color:rgb(0, 166, 231);
+    /* color:rgb(0, 166, 231); */
+    background-color: rgb(218, 245, 255);
 }

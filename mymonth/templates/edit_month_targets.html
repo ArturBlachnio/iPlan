@@ -13,6 +13,7 @@
             <th>{{ edit_month_targets_form.crt.label }}</th>
             <th>{{ edit_month_targets_form.hs.label }}</th>
             <th>{{ edit_month_targets_form.alk.label }}</th>
+            <th>{{ edit_month_targets_form.days0.label }}</th>
         </tr>
         <tr>
             <th>{{ monthly_targets.id.strftime("%Y %b") }}</th>
@@ -23,6 +24,7 @@
             <td>{{ edit_month_targets_form.crt(style="width: 80px", value=f_string_from_duration(monthly_targets.crt)) }}</td>
             <td>{{ edit_month_targets_form.hs(style="width: 80px", value=f_string_from_duration(monthly_targets.hs)) }}</td>
             <td>{{ edit_month_targets_form.alk(style="width: 80px", value=f_string_from_float(monthly_targets.alk)) }}</td>
+            <td>{{ edit_month_targets_form.days0(style="width: 80px", value=f_string_from_float(monthly_targets.days0)) }}</td>
             <td>{{ edit_month_targets_form.submit(class="btn_edit_day_save") }}</td>
         </tr>
     </form>

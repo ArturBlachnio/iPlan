@@ -3,7 +3,7 @@ from mymonth import db
 from mymonth import app
 from mymonth.forms import DayEditForm, EditSettings, CalculatorSJAForm, EditMonthTargetsForm
 from mymonth.models import Days, Settings, MonthlyTargets
-from mymonth.utils import get_month_days, string_from_duration, duration_from_string, string_from_float, float_from_string, get_target_productive_hours_per_day
+from mymonth.utils import get_month_days, string_from_duration, duration_from_string, string_from_float, float_from_string, get_target_productive_hours_per_day, get_day_of_month_for_avg_sja, calc_proper_timedelta_difference
 
 from datetime import date, timedelta, datetime
 import pandas as pd
@@ -40,25 +40,27 @@ def home():
     REF_DATE = Settings.query.first().current_month_date
     month_start, month_end, month_all_days = get_month_days(REF_DATE)
 
-    # Add a day to database if it does not exist yet. 
+    # Add day(s) to database if it does not exist yet. 
     days = Days.query.filter(Days.id >= month_start).filter(Days.id <= month_end).all()
     days_in_db = [day.id for day in days]
     for day_index in month_all_days:
         if day_index not in days_in_db:
             db.session.add(Days(id=day_index))
-        db.session.commit()
+    db.session.commit()
     
     days = Days.query.filter(Days.id >= month_start).filter(Days.id <= month_end).all()
     
-    # Extra fields to display
-    cum_TargetHours = timedelta()
+    # Extra fields to display in row summary (_s)
     row_with_totals = {'ds': timedelta(), 'dev': timedelta(), 'pol': timedelta(), 'ge': timedelta(), 'crt': timedelta(), 'hs': timedelta()}
+    cum_TargetHours = timedelta()
+    cum_TargetHours_till_today = timedelta()
     cum_TotalProductive = timedelta()
     cum_TotalNegative = timedelta()
     cum_alk = 0
+    cum_days0 = 0 
 
     for i, day in enumerate(days, start=1):
-        # Target Productive Hours
+        # Target Productive Hours depending on weekday
         day.s_TargetHours = get_target_productive_hours_per_day(day.id)
 
         # Total Productive Time
@@ -74,18 +76,25 @@ def home():
         if day.alk is not None:
             day.s_TotalNegative = max(day.alk - 2.86, 0) * timedelta(minutes=20)
             cum_alk += day.alk
+            if day.id <= date.today() and day.alk <= 0:
+                cum_days0 += 1
+        else:
+            if day.id <= date.today():
+                cum_days0 += 1
 
         # % of target
         day.s_PercOfTarget = (day.s_TotalProductive - day.s_TotalNegative) / day.s_TargetHours 
 
         # Cummulative values 
         cum_TargetHours += day.s_TargetHours
+        if day.id <= date.today():
+            cum_TargetHours_till_today += day.s_TargetHours
+
         cum_TotalProductive += day.s_TotalProductive
         cum_TotalNegative += day.s_TotalNegative
         day.cum_PercOfTarget = (cum_TotalProductive - cum_TotalNegative) / cum_TargetHours
         
         day.cum_alk = (cum_alk / i) / 7.8 * 750
-
 
         # Styles:
         # Rows with today's date
@@ -94,20 +103,47 @@ def home():
         if day.id == date.today():
             day.style_today_tr_hd = "today_header"
             day.style_today_tr_td = "today_cell"
-        
+
+    day_of_month_for_statistics = get_day_of_month_for_avg_sja(month_start, month_end)
+
     row_with_totals['targethours'] = cum_TargetHours
     row_with_totals['totalproductive'] = cum_TotalProductive
+    row_with_totals['totalnegative'] = cum_TotalNegative
+    row_with_totals['totalsja'] =  round(cum_alk / day_of_month_for_statistics, 2)
+    row_with_totals['totalml'] = int(round(row_with_totals['totalsja'] / 7.8 * 750, 0))
+    row_with_totals['totaldays0'] = cum_days0
 
+    # Planned till today
+    row_with_totals['targethours_tilltoday'] = cum_TargetHours_till_today
 
     # Change current month settings
     form_settings = EditSettings()
-    settings = Settings.query.first()
+    settings = Settings.query.first()  # There is only one setting (one date of current month)
     
     # MonthlyTargets
     monthlytargets = MonthlyTargets.query.get(date(year=settings.current_month_date.year, month=settings.current_month_date.month, day=1))
     monthlytargets.ml = int(round(monthlytargets.alk / 7.8 * 750, 0))
     monthlytargets.total_allocated = timedelta(seconds=sum([getattr(monthlytargets, hrscol).total_seconds() for hrscol in ['ds', 'dev', 'pol', 'ge', 'crt', 'hs']]))
-  
+    
+    row_with_totals['ds_tilltoday'] = monthlytargets.ds * (day_of_month_for_statistics / month_end.day)
+    row_with_totals['dev_tilltoday'] = monthlytargets.dev * (day_of_month_for_statistics / month_end.day)
+    row_with_totals['pol_tilltoday'] = monthlytargets.pol * (day_of_month_for_statistics / month_end.day)
+    row_with_totals['ge_tilltoday'] = monthlytargets.ge * (day_of_month_for_statistics / month_end.day)
+    row_with_totals['crt_tilltoday'] = monthlytargets.crt * (day_of_month_for_statistics / month_end.day)
+    row_with_totals['hs_tilltoday'] = monthlytargets.hs * (day_of_month_for_statistics / month_end.day)
+    row_with_totals['total_tilltoday'] = timedelta(seconds=sum([row_with_totals[f"{hrscol}_tilltoday"].total_seconds() for hrscol in ['ds', 'dev', 'pol', 'ge', 'crt', 'hs']]))
+
+    # Backlog (normal subtraction of timedelta does not work correctly if bigger is subtrackted from smaller object)
+    row_with_totals['ds_backlog'] = calc_proper_timedelta_difference(row_with_totals['ds'], row_with_totals['ds_tilltoday'])
+    row_with_totals['dev_backlog'] = calc_proper_timedelta_difference(row_with_totals['dev'], row_with_totals['dev_tilltoday'])
+    row_with_totals['pol_backlog'] = calc_proper_timedelta_difference(row_with_totals['pol'], row_with_totals['pol_tilltoday'])
+    row_with_totals['ge_backlog'] = calc_proper_timedelta_difference(row_with_totals['ge'], row_with_totals['ge_tilltoday'])
+    row_with_totals['crt_backlog'] = calc_proper_timedelta_difference(row_with_totals['crt'], row_with_totals['crt_tilltoday'])
+    row_with_totals['hs_backlog'] = calc_proper_timedelta_difference(row_with_totals['hs'], row_with_totals['hs_tilltoday'])
+    row_with_totals['total_backlog'] = calc_proper_timedelta_difference(row_with_totals['totalproductive'], row_with_totals['total_tilltoday'])
+
+
+    # Change displayed month
     if request.method == 'POST':
         settings.current_month_date = form_settings.current_month_date.data
         # Check if monthly targets exist
@@ -168,6 +204,7 @@ def edit_month_target(id_month):
         monthly_targets.crt = duration_from_string(edit_month_targets_form.crt.data) 
         monthly_targets.hs = duration_from_string(edit_month_targets_form.hs.data) 
         monthly_targets.alk = float_from_string(edit_month_targets_form.alk.data) 
+        monthly_targets.days0 = float_from_string(edit_month_targets_form.days0.data) 
         db.session.commit() 
         return redirect(url_for('home')) 
 
@@ -217,7 +254,7 @@ def import_db():
     db.session.commit()
 
     for index, serie in df_monthlytargets.iterrows():
-        db.session.add(MonthlyTargets(id=serie['id'], ds=serie['ds'], dev=serie['dev'], pol=serie['pol'], ge=serie['ge'], crt=serie['crt'], hs=serie['hs'], alk=serie['alk']))
+        db.session.add(MonthlyTargets(id=serie['id'], ds=serie['ds'], dev=serie['dev'], pol=serie['pol'], ge=serie['ge'], crt=serie['crt'], hs=serie['hs'], alk=serie['alk'], days0=serie['days0']))
     db.session.commit()
 
     return redirect(url_for('home'))

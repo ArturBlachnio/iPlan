@@ -94,3 +94,27 @@ def get_target_productive_hours_per_day(input_date):
     weekday_nb = input_date.weekday()
     dict_productive_hours_per_weekday = {0: 2, 1: 2, 2: 2, 3: 2, 4: 2, 5: 4, 6: 4}  # Saturday (5) and Sunday (6) get 4hrs, rest (0-4) 2hrs
     return timedelta(hours=dict_productive_hours_per_weekday.get(weekday_nb))
+
+def get_day_of_month_for_avg_sja(month_start_date, month_end_date):
+    """Returns day of month that is used to devide SJA to get average monthly consumption. 
+    If month was in the past - get last day of given month. If month is in te future - get first day of given month. """
+    # If in current month
+    if month_start_date <= date.today() <= month_end_date:
+        day_counter = date.today().day
+    elif date.today() > month_end_date:
+        day_counter = month_end_date.day
+    else: 
+        day_counter = month_start_date.day
+    return day_counter
+
+def calc_proper_timedelta_difference(timedelta_1, timedelta_2):
+    """Returns proper timedelta between 2 timedelta object. 
+    It's needed for subtracting bigger from smaller timedelta (inbuilt function does something strange)"""
+    delta_seconds = timedelta_1.total_seconds() - timedelta_2.total_seconds()
+
+    output_str = string_from_duration(timedelta(seconds=abs(delta_seconds)))
+
+    if delta_seconds < 0:
+       output_str = f"-{output_str}"
+
+    return output_str
