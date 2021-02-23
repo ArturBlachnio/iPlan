@@ -4,14 +4,14 @@ from mymonth import app
 from mymonth.forms import DayEditForm, EditSettings, CalculatorSJAForm, EditMonthTargetsForm
 from mymonth.models import Days, Settings, MonthlyTargets
 from mymonth.utils import get_month_days, string_from_duration, duration_from_string, string_from_float, float_from_string, get_target_productive_hours_per_day, get_day_of_month_for_avg_sja, calc_proper_timedelta_difference
+from bokeh.plotting import figure
+from bokeh.embed import components
+from bokeh.models import LinearAxis, Range1d, ColumnDataSource, LabelSet
 
 from datetime import date, timedelta, datetime
 import pandas as pd
 import os
 from artools.utils import show_attributes
-
-# show_attributes(MonthlyTargets.__tablename__)
-print(MonthlyTargets.__tablename__)
 
 
 def set_initial_db():
@@ -142,7 +142,6 @@ def home():
     row_with_totals['hs_backlog'] = calc_proper_timedelta_difference(row_with_totals['hs'], row_with_totals['hs_tilltoday'])
     row_with_totals['total_backlog'] = calc_proper_timedelta_difference(row_with_totals['totalproductive'], row_with_totals['total_tilltoday'])
 
-
     # Change displayed month
     if request.method == 'POST':
         settings.current_month_date = form_settings.current_month_date.data
@@ -153,8 +152,43 @@ def home():
         db.session.commit()
         return redirect(url_for('home'))
 
+    # Daily graph
+    y_alk_cum = [row.cum_alk for row in days]
+    y_alk_cum_text = [str(int(row.cum_alk)) for row in days]
+    y_score_cum = [row.cum_PercOfTarget for row in days]
+    y_score_cum_text = [str(int(round(row.cum_PercOfTarget, 2)*100)) for row in days]
+    x_days = [i for i, day in enumerate(month_all_days, start=1)]
+    y_todaybar_top = [max(y_alk_cum) if day==date.today() else None for day in month_all_days]
+
+    source = ColumnDataSource(data=dict(x_days=x_days, y_alk_cum=y_alk_cum, y_score_cum=y_score_cum, y_score_cum_text=y_score_cum_text, y_alk_cum_text=y_alk_cum_text, y_todaybar_top=y_todaybar_top))
+
+    plot = figure(title='Daily Progress', x_axis_label='day', y_axis_label='ml cumm.%', plot_width=600, plot_height=400, toolbar_location=None)  
+
+    # Today selection
+    plot.vbar(x='x_days', width=1, top='y_todaybar_top', source=source, color='#98FB98', alpha=0.5)
+
+    # Alk
+    plot.line(x='x_days', y='y_alk_cum', color="maroon", source=source)
+    plot.circle(x='x_days', y='y_alk_cum', color="maroon", fill_color="white", size=5, source=source)
+    labels_alk = LabelSet(x='x_days', y='y_alk_cum', text='y_alk_cum_text', text_font_size='10px', text_color='maroon', y_offset=5, level='annotation', source=source, render_mode='canvas')
+
+    # Score
+    plot.extra_y_ranges['y_axis_for_target_perc'] = Range1d(min(0, min(source.data.get('y_score_cum'))), max(max(source.data.get('y_score_cum')), 1)*1.05)
+    plot.line(x='x_days', y='y_score_cum', source=source, color="cornflowerblue", y_range_name='y_axis_for_target_perc')
+    plot.circle(x='x_days', y='y_score_cum', source=source, color="cornflowerblue", fill_color="white", size=5, y_range_name='y_axis_for_target_perc')
+    labels_score = LabelSet(x='x_days', y='y_score_cum', text='y_score_cum_text', text_font_size='10px', text_color='cornflowerblue', y_offset=5, y_range_name='y_axis_for_target_perc', level='annotation', source=source, render_mode='canvas')
+
+    ax_right = LinearAxis(y_range_name="y_axis_for_target_perc", axis_label="% of target cum.")
+    ax_right.axis_label_text_color ="blue"
+    plot.add_layout(ax_right, 'right')
+    plot.add_layout(labels_score)
+    plot.add_layout(labels_alk)
+
+    bokeh_daily_script, bokeh_daily_div = components(plot) 
+
     return render_template('home.html', days=days, f_string_from_duration=string_from_duration, f_string_from_float=string_from_float, 
-                            form_settings=form_settings, settings=settings, monthlytargets=monthlytargets, row_with_totals=row_with_totals)
+                            form_settings=form_settings, settings=settings, monthlytargets=monthlytargets, row_with_totals=row_with_totals, 
+                            bokeh_daily_script=bokeh_daily_script, bokeh_daily_div=bokeh_daily_div, f_round=round)
 
 
 @app.route('/day/edit/<id_day>', methods=['GET', 'POST'])

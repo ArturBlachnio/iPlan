@@ -9,8 +9,13 @@
         <title>Document</title>
     {% endif%}
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css')}}">
+    <script src="https://cdn.bokeh.org/bokeh/release/bokeh-2.2.3.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.bokeh.org/bokeh/release/bokeh-widgets-2.2.3.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.bokeh.org/bokeh/release/bokeh-tables-2.2.3.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
     {% block content %}{% endblock %}
+
+    {{ bokeh_daily_script | safe }}
 </body>
 </html>
