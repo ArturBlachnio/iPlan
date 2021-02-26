@@ -3,7 +3,7 @@ from mymonth import db
 from mymonth import app
 from mymonth.forms import DayEditForm, EditSettings, CalculatorSJAForm, EditMonthTargetsForm
 from mymonth.models import Days, Settings, MonthlyTargets
-from mymonth.utils import get_month_days, string_from_duration, duration_from_string, string_from_float, float_from_string, get_target_productive_hours_per_day, get_day_of_month_for_avg_sja, calc_proper_timedelta_difference
+from mymonth.utils import get_month_days, string_from_duration, duration_from_string, string_from_float, float_from_string, get_target_productive_hours_per_day, get_day_of_month_for_avg_sja, calc_proper_timedelta_difference, get_initial_data_from_excel
 from bokeh.plotting import figure
 from bokeh.embed import components
 from bokeh.models import LinearAxis, Range1d, ColumnDataSource, LabelSet
@@ -265,8 +265,9 @@ def export_db():
 
 @app.route('/import_from_excel')
 def import_db():
-    df_days = pd.read_excel(os.path.join('mymonth', 'static', 'initial_data', 'import_me.xlsx'), sheet_name='days')
-    df_monthlytargets = pd.read_excel(os.path.join('mymonth', 'static', 'initial_data', 'import_me.xlsx'), sheet_name='monthly_targets')
+    df_days = get_initial_data_from_excel()
+    df_monthlytargets = pd.read_excel(os.path.join('mymonth', 'static', 'initial_data', 'import_me.xlsx'),
+                                      sheet_name='monthly_targets')
     # Change columns type from string to timedelta (stored as datetime)
     for col in ['ds', 'dev', 'pol', 'ge', 'crt', 'hs']:
         df_days[col] = df_days[col].fillna('').apply(duration_from_string)
@@ -279,7 +280,8 @@ def import_db():
     db.session.commit()
 
     for index, serie in df_days.iterrows():
-        db.session.add(Days(id=serie['id'], ds=serie['ds'], dev=serie['dev'], pol=serie['pol'], ge=serie['ge'], crt=serie['crt'], hs=serie['hs'], alk=serie['alk']))
+        db.session.add(Days(id=serie['id'], ds=serie['ds'], dev=serie['dev'], pol=serie['pol'], ge=serie['ge'],
+                            crt=serie['crt'], hs=serie['hs'], alk=serie['alk']))
     db.session.commit()
 
     all_current_targets = MonthlyTargets.query.all()
@@ -288,7 +290,9 @@ def import_db():
     db.session.commit()
 
     for index, serie in df_monthlytargets.iterrows():
-        db.session.add(MonthlyTargets(id=serie['id'], ds=serie['ds'], dev=serie['dev'], pol=serie['pol'], ge=serie['ge'], crt=serie['crt'], hs=serie['hs'], alk=serie['alk'], days0=serie['days0']))
+        db.session.add(MonthlyTargets(id=serie['id'], ds=serie['ds'], dev=serie['dev'], pol=serie['pol'],
+                                      ge=serie['ge'], crt=serie['crt'], hs=serie['hs'], alk=serie['alk'],
+                                      days0=serie['days0']))
     db.session.commit()
 
     return redirect(url_for('home'))
