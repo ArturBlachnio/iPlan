@@ -3,7 +3,9 @@ from mymonth import db
 from mymonth import app
 from mymonth.forms import DayEditForm, EditSettings, CalculatorSJAForm, EditMonthTargetsForm
 from mymonth.models import Days, Settings, MonthlyTargets
-from mymonth.utils import get_month_days, string_from_duration, duration_from_string, string_from_float, float_from_string, get_target_productive_hours_per_day, get_day_of_month_for_avg_sja, calc_proper_timedelta_difference, get_initial_data_from_excel
+from mymonth.utils import (get_month_days, string_from_duration, duration_from_string, string_from_float,
+                           float_from_string, get_target_productive_hours_per_day, get_day_of_month_for_avg_sja,
+                           calc_proper_timedelta_difference, get_initial_data_from_excel, MonthlyGraph)
 from bokeh.plotting import figure
 from bokeh.embed import components
 from bokeh.models import LinearAxis, Range1d, ColumnDataSource, LabelSet
@@ -31,6 +33,7 @@ def set_initial_db():
         current_month_target = MonthlyTargets(id=id_month)
         db.session.add(current_month_target)
         db.session.commit()
+
 
 set_initial_db()
 
@@ -184,11 +187,18 @@ def home():
     plot.add_layout(labels_score)
     plot.add_layout(labels_alk)
 
-    bokeh_daily_script, bokeh_daily_div = components(plot) 
+    bokeh_daily_script, bokeh_daily_div = components(plot)
 
-    return render_template('home.html', days=days, f_string_from_duration=string_from_duration, f_string_from_float=string_from_float, 
-                            form_settings=form_settings, settings=settings, monthlytargets=monthlytargets, row_with_totals=row_with_totals, 
-                            bokeh_daily_script=bokeh_daily_script, bokeh_daily_div=bokeh_daily_div, f_round=round)
+    # Monthly graph
+    month_summary_table = MonthlyGraph(Days).df_months.to_html()
+    bokeh_monthly_script, bokeh_monthly_div = MonthlyGraph(Days).bokeh_monthly_components
+
+    return render_template('home.html', days=days, f_string_from_duration=string_from_duration,
+                           f_string_from_float=string_from_float, form_settings=form_settings, settings=settings,
+                           monthlytargets=monthlytargets, row_with_totals=row_with_totals,
+                           bokeh_daily_script=bokeh_daily_script, bokeh_daily_div=bokeh_daily_div, f_round=round,
+                           month_summary_table=month_summary_table,
+                           bokeh_monthly_script=bokeh_monthly_script, bokeh_monthly_div=bokeh_monthly_div)
 
 
 @app.route('/day/edit/<id_day>', methods=['GET', 'POST'])

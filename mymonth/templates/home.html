@@ -1,6 +1,10 @@
 {% extends "layout.html" %}
 {% block content %}
-{{ bokeh_daily_div | safe }}
+<div class="graphs">
+    <div>{{ bokeh_daily_div | safe }}</div>
+    <div>{{ bokeh_monthly_div | safe }}</div>
+    <div>{{ month_summary_table | safe }}</div>
+</div>
 <form method="POST" action="">
     {{ form_settings.hidden_tag() }}
     {{ form_settings.current_month_date.label }}    

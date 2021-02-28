@@ -33,3 +33,8 @@ th {
     /* color:rgb(0, 166, 231); */
     background-color: rgb(218, 245, 255);
 }
+
+.graphs {
+    display: flex;
+    color: #6495ed;
+}
