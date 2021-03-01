@@ -5,7 +5,8 @@ from mymonth.forms import DayEditForm, EditSettings, CalculatorSJAForm, EditMont
 from mymonth.models import Days, Settings, MonthlyTargets
 from mymonth.utils import (get_month_days, string_from_duration, duration_from_string, string_from_float,
                            float_from_string, get_target_productive_hours_per_day, get_day_of_month_for_avg_sja,
-                           calc_proper_timedelta_difference, get_initial_data_from_excel, MonthlyGraph)
+                           calc_proper_timedelta_difference, MonthlyGraph)
+from mymonth.backup import get_initial_data_from_excel
 from bokeh.plotting import figure
 from bokeh.embed import components
 from bokeh.models import LinearAxis, Range1d, ColumnDataSource, LabelSet

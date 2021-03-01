@@ -2,14 +2,14 @@ from calendar import monthrange
 from datetime import date, timedelta, datetime
 import re
 import pandas as pd
-import numpy as np
-import os
 
 from bokeh.plotting import figure
 from bokeh.embed import components
 from bokeh.models import ColumnDataSource, NumeralTickFormatter, LinearAxis, Range1d, LabelSet, DatetimeTickFormatter, BoxAnnotation
 
+
 def get_month_days(reference_date):
+    # todo - change name and concept (split into 3: first, last, all)
     """Returns: first, last and all days of a month of reference date."""
     first_day = date(year=reference_date.year, month=reference_date.month, day=1)
     last_day = date(year=reference_date.year, month=reference_date.month, day=monthrange(year=reference_date.year,
@@ -20,6 +20,7 @@ def get_month_days(reference_date):
 
 
 def duration_from_string(x):
+    # todo - check if model Days default_value set to zero affects it
     """ Converts string to valid datatime.timedelta
     Valid string format examples: 3d, 10h 5m, 1h 3s, 30m2s, etc
     - Each value must be followed by d-day, h-hour, m-minute, s-second
@@ -38,6 +39,7 @@ def duration_from_string(x):
 
 
 def string_from_duration(x, output_format=None):
+    # todo - check if model Days default_value set to zero affects it
     """ Converts datatime.timedelta into string
     Function is used to update plan and actual of task model
     """
@@ -84,6 +86,7 @@ def string_from_duration(x, output_format=None):
 
 
 def string_from_float(x):
+    # todo - check if model Days default_value set to zero affects it
     outcome = x
     if x is None:
         outcome = ''
@@ -91,6 +94,7 @@ def string_from_float(x):
 
 
 def float_from_string(x):
+    # todo - check if model Days default_value set to zero affects it
     outcome = x
     if x == '':
         outcome = None
@@ -100,6 +104,7 @@ def float_from_string(x):
 
 
 def get_target_productive_hours_per_day(input_date):
+    # todo - move to settings
     """ Calculates number of productive hours per day. Returns timedelta object"""
     weekday_nb = input_date.weekday()
     dict_productive_hours_per_weekday = {0: 2, 1: 2, 2: 2, 3: 2, 4: 2, 5: 4,
@@ -108,8 +113,8 @@ def get_target_productive_hours_per_day(input_date):
 
 
 def get_day_of_month_for_avg_sja(month_start_date, month_end_date):
-    """Returns day of month that is used to devide SJA to get average monthly consumption. 
-    If month was in the past - get last day of given month. If month is in te future - get first day of given month. """
+    """Returns day of month that is used to divide SJA to get average monthly consumption.
+    If month was in the past - get last day of given month. If month is in the future - get first day of given month."""
     # If in current month
     if month_start_date <= date.today() <= month_end_date:
         day_counter = date.today().day
@@ -133,79 +138,8 @@ def calc_proper_timedelta_difference(timedelta_1, timedelta_2):
     return output_str
 
 
-def transform_historical_scores_into_daily_data(input_path, input_sheetname):
-    """Data from the past are available only at aggregated levels. This function transforms it into standards daily
-    recodes that will be used to produce monthly summaries. """
-
-    # Load historical data from excel file
-    df_historical = pd.read_excel(input_path, sheet_name=input_sheetname)
-    df_historical.dropna(inplace=True)
-    df_historical['date'] = pd.to_datetime(df_historical['month'], format='%ym%m')
-    df_historical.set_index('date', inplace=True)
-
-    # Reindexing with all days in each month
-    list_of_indexes = [get_month_days(item)[2] for item in df_historical.index]
-    new_index = []
-    for list_item in list_of_indexes:
-        new_index.extend(list_item)
-    df = df_historical.reindex(new_index, method='ffill').reset_index()
-
-    # Recalculation of day0 and ml
-    count_days_in_month = df.groupby('month').size()
-    count_days_in_month.name = 'nb_of_days'
-    df = df.merge(count_days_in_month, how='left', on='month')
-    df['new_ml'] = df.ml * df.nb_of_days / (df.nb_of_days - df.day0)
-
-    df_groups = []
-    for group_name, group_data in list(df.groupby('month')):
-        nb_days0 = group_data.day0.iloc[0]
-        ml_including_days0 = group_data.new_ml.copy()
-        ml_including_days0.iloc[0: nb_days0] = 0
-        group_data['new_ml'] = ml_including_days0
-        df_groups.append(group_data)
-    df = pd.concat(df_groups, ignore_index=True)
-
-    # Calculation of Sja and negative hours
-    df['sja'] = df.new_ml * 7.8 / 750
-    df['negative_hrs'] = (df['sja'] - 2.86).clip(0) * timedelta(minutes=20)
-
-    # Calculation of productive hours taking into account negative time from sja
-    df['target_hrs'] = df['date'].map(get_target_productive_hours_per_day)
-    df_positive_hrs_calc = df.groupby('month', as_index=False)[
-        ['negative_hrs', 'target_hrs', 'score', 'nb_of_days']].agg(
-        {'negative_hrs': sum, 'target_hrs': sum, 'score': np.mean, 'nb_of_days': max})
-    df_positive_hrs_calc['avg_positive_hrs'] = (df_positive_hrs_calc['target_hrs'] * df_positive_hrs_calc['score'] +
-                                                df_positive_hrs_calc['negative_hrs']) / df_positive_hrs_calc[
-                                                   'nb_of_days']
-    df = df.merge(df_positive_hrs_calc[['month', 'avg_positive_hrs']], how='left', on='month')
-
-    # Reshape and rename df to match input of daily activities - All set to 'dev' category
-    df_import_me = df[['date', 'avg_positive_hrs', 'sja']].copy()
-    df_import_me.rename(columns={'date': 'id', 'avg_positive_hrs': 'dev', 'sja': 'alk'}, inplace=True)
-    df_import_me['dev'] = df_import_me['dev'].map(string_from_duration)
-    df_import_me['id'] = pd.to_datetime(df_import_me['id'])
-    return df_import_me
-
-
-def get_initial_data_from_excel(input_path=os.path.join('mymonth', 'static', 'initial_data', 'import_me.xlsx')):
-    """Gets historical data from excel file.
-    Combines 2 worksheets:
-     - 'days' with historical data based recorded on daily levels, and
-     - 'historical_scores' with scores and alk aggregated to months. """
-
-    # Load data from excel
-    df_days = pd.read_excel(input_path, sheet_name='days')
-    df_historical_scores = transform_historical_scores_into_daily_data(input_path=input_path,
-                                                                       input_sheetname='historical_scores')
-
-    # Concatenate and drop duplicates (keep first entries - details of days have priority over months)
-    df = pd.concat([df_days, df_historical_scores], ignore_index=True)
-    df.drop_duplicates(subset='id', inplace=True)
-
-    return df
-
-
 class MonthlyGraph:
+    # todo - rename and move to graphs.py
     def __init__(self, db_table):
         self.db_table = db_table
         self.db_table_query_output = self.get_historical_data_from_db()
@@ -217,6 +151,7 @@ class MonthlyGraph:
         self.bokeh_monthly_components = self.get_monthly_graph_components(self.df_months)
 
     def get_historical_data_from_db(self, reference_date=None, display_years=2):
+        # todo - move to backup
         """Returns dataframe with all entries between:
          - last day of previous month (selection=reference_date), and:
          - first day of current year - 'display_years'."""
@@ -231,6 +166,7 @@ class MonthlyGraph:
 
     @staticmethod
     def convert_days_model_to_dataframe(query_output):
+        # todo - move to data_converters and make it smarter
         """"Converts 'Days' query output into pandas DataFrame."""
         id = []
         ds = []
@@ -261,6 +197,7 @@ class MonthlyGraph:
 
     @staticmethod
     def get_summary_per_month(df_days):
+        # todo - move to data_converters
         """Translates daily data into monthly summary"""
         df_days['month'] = df_days.id.dt.strftime('%ym%m')
         df_days['month_first_day'] = df_days.id
@@ -281,6 +218,7 @@ class MonthlyGraph:
         return df_months
 
     def get_summary_for_current_month(self, reference_date=None):
+        # todo - move to data_converters
         """"Generates summary (score, days0 and ml) for current month"""
         if reference_date is None:
             reference_date = date.today()
@@ -295,6 +233,7 @@ class MonthlyGraph:
 
     @staticmethod
     def get_monthly_graph_components(df_month):
+        # todo - move to graphs
         df_month['labels_ml'] = df_month['ml'].astype(int).astype(str)
         df_month['labels_day0'] = df_month['day0'].astype(int).astype(str)
         df_month['ml_current'] = df_month['ml'].values[-1]
