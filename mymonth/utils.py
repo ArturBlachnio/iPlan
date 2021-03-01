@@ -264,9 +264,11 @@ class MonthlyGraph:
         """Translates daily data into monthly summary"""
         df_days['month'] = df_days.id.dt.strftime('%ym%m')
         df_days['month_first_day'] = df_days.id
-        df_days.loc[df_days.alk == 0, 'day0'] = 1
+        df_days.alk.fillna(0, inplace=True)
+        df_days.loc[(df_days.alk == 0), 'day0'] = 1
         df_days['ml'] = df_days.alk / 7.8 * 750
         df_days['productive_hrs'] = df_days.select_dtypes(include=['timedelta']).sum(axis=1)
+        df_days.loc[df_days['productive_hrs'] == 0, 'productive_hrs'] = timedelta()
         df_days['target_hrs'] = df_days.id.map(get_target_productive_hours_per_day)
         df_days['negative_hrs'] = (df_days['alk'] - 2.86).clip(0) * timedelta(minutes=20)
 
@@ -303,7 +305,8 @@ class MonthlyGraph:
                       y_range=Range1d(0, max(source.data.get('score')) * 1.1),
                       y_axis_label='Score [%]',
                       plot_width=600,
-                      plot_height=400)
+                      plot_height=400,
+                      toolbar_location=None)
 
         plot.xaxis.major_label_orientation = 1
         plot.yaxis[0].formatter = NumeralTickFormatter(format='0%')
@@ -313,7 +316,7 @@ class MonthlyGraph:
         plot.extra_y_ranges['y_axis_ml'] = Range1d(0, max(source.data.get('ml')) * 1.05)
         axis_ml = LinearAxis(y_range_name="y_axis_ml", axis_label="Avg ml")
         plot.line(x='month', y='ml_current', y_range_name='y_axis_ml', source=source, line_color='maroon', line_width=0, line_dash='dotted')
-        labels_ml_rank = LabelSet(x='month', y='ml_current', text='ml_rank', y_range_name='y_axis_ml', text_font_size='10px', text_color='maroon', x_offset=-7, y_offset=-20, level='annotation', source=source, render_mode='canvas')
+        labels_ml_rank = LabelSet(x='month', y='ml', text='ml_rank', y_range_name='y_axis_ml', text_font_size='10px', text_color='gray', x_offset=-7, y_offset=-20, level='annotation', source=source, render_mode='canvas')
         plot.line(x='month', y='ml', y_range_name='y_axis_ml', source=source, line_color='maroon', line_width=2)
         plot.circle(x='month', y='ml', y_range_name='y_axis_ml', source=source, color="maroon", fill_color="white", size=7)
         labels_ml = LabelSet(x='month', y='ml', text='labels_ml', y_range_name='y_axis_ml', text_font_size='10px', text_color='maroon', x_offset=-3, y_offset=7, level='annotation', source=source, render_mode='canvas')
