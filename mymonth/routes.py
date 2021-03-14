@@ -3,7 +3,8 @@ from mymonth import db
 from mymonth import app
 from mymonth.forms import DayEditForm, EditSettings, CalculatorSJAForm, EditMonthTargetsForm
 from mymonth.models import Days, Settings, MonthlyTargets
-from mymonth.utils import (get_month_days, string_from_duration, duration_from_string, string_from_float,
+from mymonth.utils import UtilsDatetime, UtilsDataConversion
+from mymonth.utils import (string_from_float,
                            float_from_string, get_target_productive_hours_per_day, get_day_of_month_for_avg_sja,
                            calc_proper_timedelta_difference, MonthlyGraph)
 from mymonth.backup import get_initial_data_from_excel
@@ -41,18 +42,17 @@ set_initial_db()
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
-    REF_DATE = Settings.query.first().current_month_date
-    month_start, month_end, month_all_days = get_month_days(REF_DATE)
+    ref_date = UtilsDatetime(Settings.query.first().current_month_date)
 
     # Add day(s) to database if it does not exist yet. 
-    days = Days.query.filter(Days.id >= month_start).filter(Days.id <= month_end).all()
+    days = Days.query.filter(Days.id >= ref_date.month_first_date).filter(Days.id <= ref_date.month_last_date).all()
     days_in_db = [day.id for day in days]
-    for day_index in month_all_days:
+    for day_index in ref_date.month_all_dates:
         if day_index not in days_in_db:
             db.session.add(Days(id=day_index))
     db.session.commit()
     
-    days = Days.query.filter(Days.id >= month_start).filter(Days.id <= month_end).all()
+    days = Days.query.filter(Days.id >= ref_date.month_first_date).filter(Days.id <= ref_date.month_last_date).all()
     
     # Extra fields to display in row summary (_s)
     row_with_totals = {'ds': timedelta(), 'dev': timedelta(), 'pol': timedelta(), 'ge': timedelta(), 'crt': timedelta(), 'hs': timedelta()}
@@ -108,7 +108,7 @@ def home():
             day.style_today_tr_hd = "today_header"
             day.style_today_tr_td = "today_cell"
 
-    day_of_month_for_statistics = get_day_of_month_for_avg_sja(month_start, month_end)
+    day_of_month_for_statistics = get_day_of_month_for_avg_sja(ref_date.month_first_date, ref_date.month_last_date)
 
     row_with_totals['targethours'] = cum_TargetHours
     row_with_totals['totalproductive'] = cum_TotalProductive
@@ -129,12 +129,12 @@ def home():
     monthlytargets.ml = int(round(monthlytargets.alk / 7.8 * 750, 0))
     monthlytargets.total_allocated = timedelta(seconds=sum([getattr(monthlytargets, hrscol).total_seconds() for hrscol in ['ds', 'dev', 'pol', 'ge', 'crt', 'hs']]))
     
-    row_with_totals['ds_tilltoday'] = monthlytargets.ds * (day_of_month_for_statistics / month_end.day)
-    row_with_totals['dev_tilltoday'] = monthlytargets.dev * (day_of_month_for_statistics / month_end.day)
-    row_with_totals['pol_tilltoday'] = monthlytargets.pol * (day_of_month_for_statistics / month_end.day)
-    row_with_totals['ge_tilltoday'] = monthlytargets.ge * (day_of_month_for_statistics / month_end.day)
-    row_with_totals['crt_tilltoday'] = monthlytargets.crt * (day_of_month_for_statistics / month_end.day)
-    row_with_totals['hs_tilltoday'] = monthlytargets.hs * (day_of_month_for_statistics / month_end.day)
+    row_with_totals['ds_tilltoday'] = monthlytargets.ds * (day_of_month_for_statistics / ref_date.month_last_date.day)
+    row_with_totals['dev_tilltoday'] = monthlytargets.dev * (day_of_month_for_statistics / ref_date.month_last_date.day)
+    row_with_totals['pol_tilltoday'] = monthlytargets.pol * (day_of_month_for_statistics / ref_date.month_last_date.day)
+    row_with_totals['ge_tilltoday'] = monthlytargets.ge * (day_of_month_for_statistics / ref_date.month_last_date.day)
+    row_with_totals['crt_tilltoday'] = monthlytargets.crt * (day_of_month_for_statistics / ref_date.month_last_date.day)
+    row_with_totals['hs_tilltoday'] = monthlytargets.hs * (day_of_month_for_statistics / ref_date.month_last_date.day)
     row_with_totals['total_tilltoday'] = timedelta(seconds=sum([row_with_totals[f"{hrscol}_tilltoday"].total_seconds() for hrscol in ['ds', 'dev', 'pol', 'ge', 'crt', 'hs']]))
 
     # Backlog (normal subtraction of timedelta does not work correctly if bigger is subtrackted from smaller object)
@@ -161,8 +161,8 @@ def home():
     y_alk_cum_text = [str(int(row.cum_alk)) for row in days]
     y_score_cum = [row.cum_PercOfTarget for row in days]
     y_score_cum_text = [str(int(round(row.cum_PercOfTarget, 2)*100)) for row in days]
-    x_days = [i for i, day in enumerate(month_all_days, start=1)]
-    y_todaybar_top = [max(y_alk_cum) if day==date.today() else None for day in month_all_days]
+    x_days = [i for i, day in enumerate(ref_date.month_all_dates, start=1)]
+    y_todaybar_top = [max(y_alk_cum) if day==date.today() else None for day in ref_date.month_all_dates]
 
     source = ColumnDataSource(data=dict(x_days=x_days, y_alk_cum=y_alk_cum, y_score_cum=y_score_cum, y_score_cum_text=y_score_cum_text, y_alk_cum_text=y_alk_cum_text, y_todaybar_top=y_todaybar_top))
 
@@ -194,7 +194,7 @@ def home():
     month_summary_table = MonthlyGraph(Days).df_months.to_html()
     bokeh_monthly_script, bokeh_monthly_div = MonthlyGraph(Days).bokeh_monthly_components
 
-    return render_template('home.html', days=days, f_string_from_duration=string_from_duration,
+    return render_template('home.html', days=days, f_string_from_duration=UtilsDataConversion.string_from_timedelta,
                            f_string_from_float=string_from_float, form_settings=form_settings, settings=settings,
                            monthlytargets=monthlytargets, row_with_totals=row_with_totals,
                            bokeh_daily_script=bokeh_daily_script, bokeh_daily_div=bokeh_daily_div, f_round=round,
@@ -218,20 +218,20 @@ def edit_day(id_day):
             sja3 = float(form_calc_sja.ml3.data * (form_calc_sja.perc3.data / 100)) / 12.5
             day.alk = round(sum([sja1, sja2, sja3]), 1)
             sja_values = dict(zip(['sja1', 'sja2', 'sja3'], [round(sja1, 2), round(sja2, 2), round(sja3, 2)]))
-            return render_template('edit_day.html', form_day=form_day, form_calc_sja=form_calc_sja, sja_values=sja_values, day=day, f_string_from_duration=string_from_duration, f_string_from_float=string_from_float)
+            return render_template('edit_day.html', form_day=form_day, form_calc_sja=form_calc_sja, sja_values=sja_values, day=day, f_string_from_duration=UtilsDataConversion.string_from_timedelta, f_string_from_float=string_from_float)
         else:
             # print(request.form)
-            day.ds = duration_from_string(form_day.ds.data)
-            day.dev = duration_from_string(form_day.dev.data)
-            day.pol = duration_from_string(form_day.pol.data)
-            day.ge = duration_from_string(form_day.ge.data)
-            day.crt = duration_from_string(form_day.crt.data)
-            day.hs = duration_from_string(form_day.hs.data)
+            day.ds = UtilsDataConversion.timedelta_from_string(form_day.ds.data)
+            day.dev = UtilsDataConversion.timedelta_from_string(form_day.dev.data)
+            day.pol = UtilsDataConversion.timedelta_from_string(form_day.pol.data)
+            day.ge = UtilsDataConversion.timedelta_from_string(form_day.ge.data)
+            day.crt = UtilsDataConversion.timedelta_from_string(form_day.crt.data)
+            day.hs = UtilsDataConversion.timedelta_from_string(form_day.hs.data)
             day.alk = float_from_string(form_day.alk.data)
 
             db.session.commit()
             return redirect(url_for('home'))
-    return render_template('edit_day.html', form_day=form_day, form_calc_sja=form_calc_sja, sja_values=sja_values, day=day, f_string_from_duration=string_from_duration, f_string_from_float=string_from_float)
+    return render_template('edit_day.html', form_day=form_day, form_calc_sja=form_calc_sja, sja_values=sja_values, day=day, f_string_from_duration=UtilsDataConversion.string_from_timedelta, f_string_from_float=string_from_float)
 
 
 @app.route('/edit_month_target/<id_month>', methods=['GET', 'POST'])
@@ -242,19 +242,19 @@ def edit_month_target(id_month):
     monthly_targets = MonthlyTargets.query.get_or_404(date.fromisoformat(id_month))
 
     if request.method == 'POST':
-        monthly_targets.ds = duration_from_string(edit_month_targets_form.ds.data)  
-        monthly_targets.dev = duration_from_string(edit_month_targets_form.dev.data) 
-        monthly_targets.pol = duration_from_string(edit_month_targets_form.pol.data) 
-        monthly_targets.ge = duration_from_string(edit_month_targets_form.ge.data) 
-        monthly_targets.crt = duration_from_string(edit_month_targets_form.crt.data) 
-        monthly_targets.hs = duration_from_string(edit_month_targets_form.hs.data) 
+        monthly_targets.ds = UtilsDataConversion.timedelta_from_string(edit_month_targets_form.ds.data)
+        monthly_targets.dev = UtilsDataConversion.timedelta_from_string(edit_month_targets_form.dev.data)
+        monthly_targets.pol = UtilsDataConversion.timedelta_from_string(edit_month_targets_form.pol.data)
+        monthly_targets.ge = UtilsDataConversion.timedelta_from_string(edit_month_targets_form.ge.data)
+        monthly_targets.crt = UtilsDataConversion.timedelta_from_string(edit_month_targets_form.crt.data)
+        monthly_targets.hs = UtilsDataConversion.timedelta_from_string(edit_month_targets_form.hs.data)
         monthly_targets.alk = float_from_string(edit_month_targets_form.alk.data) 
         monthly_targets.days0 = float_from_string(edit_month_targets_form.days0.data) 
         db.session.commit() 
         return redirect(url_for('home')) 
 
-    return render_template('edit_month_targets.html', edit_month_targets_form=edit_month_targets_form, 
-                            monthly_targets=monthly_targets, f_string_from_duration=string_from_duration, f_string_from_float=string_from_float)
+    return render_template('edit_month_targets.html', edit_month_targets_form=edit_month_targets_form,
+                           monthly_targets=monthly_targets, f_string_from_duration=UtilsDataConversion.string_from_timedelta, f_string_from_float=string_from_float)
 
 
 @app.route('/export_to_excel')
@@ -264,8 +264,8 @@ def export_db():
 
     # Change columns type from timedelta/datetime to string
     for col in ['ds', 'dev', 'pol', 'ge', 'crt', 'hs']:
-        df_days[col] = df_days[col].apply(string_from_duration)
-        df_monthlytargets[col] = df_monthlytargets[col].apply(string_from_duration)
+        df_days[col] = df_days[col].apply(UtilsDataConversion.string_from_timedelta)
+        df_monthlytargets[col] = df_monthlytargets[col].apply(UtilsDataConversion.string_from_timedelta)
 
     excel_writer = pd.ExcelWriter(os.path.join('mymonth', 'static', 'initial_data', f'export_{datetime.now().strftime("%Y%m%d%H%M%S")}.xlsx'))
     df_days.sort_values(by='id').to_excel(excel_writer, sheet_name='days', index=False, freeze_panes=(1, 0))
@@ -281,8 +281,8 @@ def import_db():
                                       sheet_name='monthly_targets')
     # Change columns type from string to timedelta (stored as datetime)
     for col in ['ds', 'dev', 'pol', 'ge', 'crt', 'hs']:
-        df_days[col] = df_days[col].fillna('').apply(duration_from_string)
-        df_monthlytargets[col] = df_monthlytargets[col].fillna('').apply(duration_from_string)
+        df_days[col] = df_days[col].fillna('').apply(UtilsDataConversion.timedelta_from_string)
+        df_monthlytargets[col] = df_monthlytargets[col].fillna('').apply(UtilsDataConversion.timedelta_from_string)
 
     # Overwrite database with new values
     all_current_days = Days.query.all()

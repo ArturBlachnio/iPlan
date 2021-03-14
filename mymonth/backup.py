@@ -1,7 +1,8 @@
 import os
 import pandas as pd
 import numpy as np
-from mymonth.utils import get_month_days, get_target_productive_hours_per_day, string_from_duration
+from mymonth.utils import UtilsDatetime, UtilsDataConversion
+from mymonth.utils import get_target_productive_hours_per_day
 from datetime import timedelta
 
 
@@ -16,7 +17,7 @@ def transform_historical_scores_into_daily_data(input_path, input_sheetname):
     df_historical.set_index('date', inplace=True)
 
     # Reindexing with all days in each month
-    list_of_indexes = [get_month_days(item)[2] for item in df_historical.index]
+    list_of_indexes = [UtilsDatetime(day).month_all_dates for day in df_historical.index]
     new_index = []
     for list_item in list_of_indexes:
         new_index.extend(list_item)
@@ -54,7 +55,7 @@ def transform_historical_scores_into_daily_data(input_path, input_sheetname):
     # Reshape and rename df to match input of daily activities - All set to 'dev' category
     df_import_me = df[['date', 'avg_positive_hrs', 'sja']].copy()
     df_import_me.rename(columns={'date': 'id', 'avg_positive_hrs': 'dev', 'sja': 'alk'}, inplace=True)
-    df_import_me['dev'] = df_import_me['dev'].map(string_from_duration)
+    df_import_me['dev'] = df_import_me['dev'].map(UtilsDataConversion.string_from_timedelta)
     df_import_me['id'] = pd.to_datetime(df_import_me['id'])
     return df_import_me
 

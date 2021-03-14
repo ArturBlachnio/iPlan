@@ -1,3 +1,6 @@
+"""Module contains:
+ - Utilities (combined into classes) and can be used across all modules
+"""
 from calendar import monthrange
 from datetime import date, timedelta, datetime
 import re
@@ -8,85 +11,100 @@ from bokeh.embed import components
 from bokeh.models import ColumnDataSource, NumeralTickFormatter, LinearAxis, Range1d, LabelSet, DatetimeTickFormatter, BoxAnnotation
 
 
-def get_month_days(reference_date):
-    # todo - change name and concept (split into 3: first, last, all)
-    """Returns: first, last and all days of a month of reference date."""
-    first_day = date(year=reference_date.year, month=reference_date.month, day=1)
-    last_day = date(year=reference_date.year, month=reference_date.month, day=monthrange(year=reference_date.year,
-                                                                                         month=reference_date.month)[1])
-    days_in_month = (last_day - first_day).days + 1
-    all_days = [date(year=first_day.year, month=first_day.month, day=day) for day in range(1, days_in_month + 1)]
-    return first_day, last_day, all_days
+class UtilsDatetime:
+    """Tools related to datetime objects"""
+    def __init__(self, input_date):
+        self.date = input_date
+        self.month = input_date.month
+        self.year = input_date.year
+
+    @property
+    def month_first_date(self):
+        """Returns first day of a month representing input_date"""
+        return date(year=self.year, month=self.month, day=1)
+
+    @property
+    def month_last_date(self):
+        """Returns last day of a month representing input_date"""
+        last_day = monthrange(year=self.year, month=self.month)[1]
+        return date(year=self.year, month=self.month, day=last_day)
+
+    @property
+    def month_all_dates(self):
+        """Returns all days of a month as a list"""
+        number_days_in_month = (self.month_last_date - self.month_first_date).days + 1
+        return [date(year=self.year, month=self.month, day=day) for day in range(1, number_days_in_month + 1)]
 
 
-def duration_from_string(x):
-    # todo - check if model Days default_value set to zero affects it
-    """ Converts string to valid datatime.timedelta
-    Valid string format examples: 3d, 10h 5m, 1h 3s, 30m2s, etc
-    - Each value must be followed by d-day, h-hour, m-minute, s-second
-    - Sequence is not important: 1h 30m = 30m 1h
-    """
-    if x is None:
-        return timedelta(0)
+class UtilsDataConversion:
+    """Tools related to converting data types"""
+    @staticmethod
+    def timedelta_from_string(input_string):
+        """ Converts string into timedelta object
+        Valid string format examples: 3d, 10h 5m, 1h 3s, 30m2s, etc
+        - Each value must be followed by d-day, h-hour, m-minute, s-second
+        - Sequence is not important: 1h 30m = 30m 1h
+        """
+        if input_string is None:
+            return timedelta(0)
 
-    # Dict of period: value pairs: {'h': '3', 'd': '4', 'm': '30', 's': '22'}
-    duration_dict = dict(zip(re.findall('[dhms]', x), re.findall('\d+', x)))
-    days = int(duration_dict.get('d', 0))
-    hours = int(duration_dict.get('h', 0))
-    minutes = int(duration_dict.get('m', 0))
-    seconds = int(duration_dict.get('s', 0))
-    return timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+        # Dict of period: value pairs: {'h': '3', 'd': '4', 'm': '30', 's': '22'}
+        duration_dict = dict(zip(re.findall('[dhms]', input_string), re.findall('\d+', input_string)))
+        days = int(duration_dict.get('d', 0))
+        hours = int(duration_dict.get('h', 0))
+        minutes = int(duration_dict.get('m', 0))
+        seconds = int(duration_dict.get('s', 0))
+        return timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
 
+    @staticmethod
+    def string_from_timedelta(input_timedelta, output_format=None):
+        """ Converts timedelta into string e.g. 2h 35m"""
+        # If input_timedelta is datetime. In database intervals are kept as datetime objects starting at 1970-1-1)
+        if isinstance(input_timedelta, datetime):
+            input_timedelta = input_timedelta - datetime(1970, 1, 1)
 
-def string_from_duration(x, output_format=None):
-    # todo - check if model Days default_value set to zero affects it
-    """ Converts datatime.timedelta into string
-    Function is used to update plan and actual of task model
-    """
-    # Convert to timedelta if instance of datetime (in mymonth db, intervals are kept as datetime objects starting at
-    # 1970-1-1)
-    if isinstance(x, datetime):
-        x = x - datetime(1970, 1, 1)
+        if input_timedelta is None or input_timedelta is pd.NaT or input_timedelta.total_seconds() == 0:
+            return ''
 
-    if x is None or x is pd.NaT or x.total_seconds() == 0:
-        return ''
+        if output_format == 'hm':
+            total_seconds = input_timedelta.total_seconds()
+            hours = total_seconds // 3600
+            total_seconds -= hours * 3600
+            minutes = total_seconds // 60
+            return f'{int(hours)}h {int(minutes)}m'
 
-    if output_format == 'hm':
-        total_seconds = x.total_seconds()
+        total_seconds = input_timedelta.total_seconds()
+        days = total_seconds // 86400
+        total_seconds -= days * 86400
         hours = total_seconds // 3600
         total_seconds -= hours * 3600
         minutes = total_seconds // 60
-        return f'{int(hours)}h {int(minutes)}m'
+        total_seconds -= minutes * 60
+        seconds = total_seconds
 
-    total_seconds = x.total_seconds()
-    days = total_seconds // 86400
-    total_seconds -= days * 86400
-    hours = total_seconds // 3600
-    total_seconds -= hours * 3600
-    minutes = total_seconds // 60
-    total_seconds -= minutes * 60
-    seconds = total_seconds
+        # Compact display: if nb of none-zero items > 2 than drop seconds.
+        # todo - simplify with while
+        duration_items = [(days, 'd'), (hours, 'h'), (minutes, 'm'), (seconds, 's')]
+        non_zero_items = 0
+        for item in duration_items:
+            if item[0] != 0:
+                non_zero_items += 1
+        if non_zero_items > 2:
+            duration_items.pop(-1)
+        # Final output
+        outcome = ''
+        for item in duration_items:
+            if item[0] != 0:
+                outcome += f'{int(item[0])}{item[1]} '
+        return outcome[:-1]
 
-    # Compact display: if nb of none-zero items > 2 than drop seconds.
-    duration_items = [(days, 'd'), (hours, 'h'), (minutes, 'm'), (seconds, 's')]
-    non_zero_items = 0
-    for item in duration_items:
-        if item[0] != 0:
-            non_zero_items += 1
-
-    if non_zero_items > 2:
-        duration_items.pop(-1)
-
-    # Final output
-    outcome = ''
-    for item in duration_items:
-        if item[0] != 0:
-            outcome += f'{int(item[0])}{item[1]} '
-    return outcome[:-1]
+# inputs = [timedelta(days=2, hours=22)]
+# for d in inputs:
+#     print(UtilsDataConversion.string_from_timedelta(d, 'hm'))
 
 
 def string_from_float(x):
-    # todo - check if model Days default_value set to zero affects it
+    # todo - UtilsDataConversion - check if model Days default_value set to zero affects it
     outcome = x
     if x is None:
         outcome = ''
@@ -94,7 +112,7 @@ def string_from_float(x):
 
 
 def float_from_string(x):
-    # todo - check if model Days default_value set to zero affects it
+    # todo - UtilsDataConversion - check if model Days default_value set to zero affects it
     outcome = x
     if x == '':
         outcome = None
@@ -104,7 +122,7 @@ def float_from_string(x):
 
 
 def get_target_productive_hours_per_day(input_date):
-    # todo - move to settings
+    # todo - Core? - move to defaults
     """ Calculates number of productive hours per day. Returns timedelta object"""
     weekday_nb = input_date.weekday()
     dict_productive_hours_per_weekday = {0: 2, 1: 2, 2: 2, 3: 2, 4: 2, 5: 4,
@@ -113,6 +131,7 @@ def get_target_productive_hours_per_day(input_date):
 
 
 def get_day_of_month_for_avg_sja(month_start_date, month_end_date):
+    # todo - datasets (it's only used for days staristics)
     """Returns day of month that is used to divide SJA to get average monthly consumption.
     If month was in the past - get last day of given month. If month is in the future - get first day of given month."""
     # If in current month
@@ -126,11 +145,12 @@ def get_day_of_month_for_avg_sja(month_start_date, month_end_date):
 
 
 def calc_proper_timedelta_difference(timedelta_1, timedelta_2):
+    # todo - UtilsDate
     """Returns proper timedelta between 2 timedelta object. 
     It's needed for subtracting bigger from smaller timedelta (inbuilt function does something strange)"""
     delta_seconds = timedelta_1.total_seconds() - timedelta_2.total_seconds()
 
-    output_str = string_from_duration(timedelta(seconds=abs(delta_seconds)))
+    output_str = UtilsDataConversion.string_from_timedelta(timedelta(seconds=abs(delta_seconds)))
 
     if delta_seconds < 0:
         output_str = f"-{output_str}"
@@ -151,8 +171,8 @@ class MonthlyGraph:
         self.bokeh_monthly_components = self.get_monthly_graph_components(self.df_months)
 
     def get_historical_data_from_db(self, reference_date=None, display_years=2):
-        # todo - move to backup
-        """Returns dataframe with all entries between:
+        # todo - move to datasets
+        """Returns DataFrame with all entries between:
          - last day of previous month (selection=reference_date), and:
          - first day of current year - 'display_years'."""
 
@@ -166,7 +186,7 @@ class MonthlyGraph:
 
     @staticmethod
     def convert_days_model_to_dataframe(query_output):
-        # todo - move to data_converters and make it smarter
+        # todo - move to datasets and make it smarter
         """"Converts 'Days' query output into pandas DataFrame."""
         id = []
         ds = []
@@ -197,7 +217,7 @@ class MonthlyGraph:
 
     @staticmethod
     def get_summary_per_month(df_days):
-        # todo - move to data_converters
+        # todo - move to datasets
         """Translates daily data into monthly summary"""
         df_days['month'] = df_days.id.dt.strftime('%ym%m')
         df_days['month_first_day'] = df_days.id
@@ -218,7 +238,7 @@ class MonthlyGraph:
         return df_months
 
     def get_summary_for_current_month(self, reference_date=None):
-        # todo - move to data_converters
+        # todo - move to datasets
         """"Generates summary (score, days0 and ml) for current month"""
         if reference_date is None:
             reference_date = date.today()
