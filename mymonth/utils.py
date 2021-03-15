@@ -57,8 +57,18 @@ class UtilsDataConversion:
         return timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
 
     @staticmethod
-    def string_from_timedelta(input_timedelta, output_format=None):
-        """ Converts timedelta into string e.g. 2h 35m"""
+    def string_from_timedelta(input_timedelta, output_format=None, show_units_with_zero=False):
+        """ Converts timedelta object into string e.g. 2h 35m with a specified output_format.
+         - input_timedelta: must be timedelta object.
+           If gives as datetime, will be converted to timedelta.
+           If empty, None or equal to 0 seconds, will return empty string ''.
+         - output_format: (default = 'd h m s') accepts combinations of 'd'-days, 'h'-hours, 'm'-minutes and 's'-seconds.
+           Format examples: 'd hh m' or 'h mm ss'.
+           Double unit like 'hh' ensures displaying value as 2-digit. '2h' with 'hh' returns '02h'.
+           Spaces in format are taken into account. Use 'hmm' to show '1h33m', 'h mm' for '1h 33m'.
+         - show_units_with_zeros: (default = False) forces displaying '0d' or '00h' if value for unit equals zero.
+
+        """
         # If input_timedelta is datetime. In database intervals are kept as datetime objects starting at 1970-1-1)
         if isinstance(input_timedelta, datetime):
             input_timedelta = input_timedelta - datetime(1970, 1, 1)
@@ -66,41 +76,30 @@ class UtilsDataConversion:
         if input_timedelta is None or input_timedelta is pd.NaT or input_timedelta.total_seconds() == 0:
             return ''
 
-        if output_format == 'hm':
-            total_seconds = input_timedelta.total_seconds()
-            hours = total_seconds // 3600
-            total_seconds -= hours * 3600
-            minutes = total_seconds // 60
-            return f'{int(hours)}h {int(minutes)}m'
+        input_timedelta = input_timedelta.total_seconds()
 
-        total_seconds = input_timedelta.total_seconds()
-        days = total_seconds // 86400
-        total_seconds -= days * 86400
-        hours = total_seconds // 3600
-        total_seconds -= hours * 3600
-        minutes = total_seconds // 60
-        total_seconds -= minutes * 60
-        seconds = total_seconds
+        # Set default output format
+        if output_format is None:
+            output_format = 'd h m s'
+        # Translate format from string to dict of {time_indicator: {'digits': X, 'rest': Y}
+        # E.g.  'd hh mm' -> {'d': {'digits': 1, 'rest': ' '}, 'h': {'digits': 2, 'rest': ' '}, [...]}
+        seconds_per_unit = {'d': 86400, 'h': 3600, 'm': 60, 's': 1}
+        output_format_attrs = {}
+        for unit in seconds_per_unit:
+            output_format_attrs[unit] = {'digits': 0, 'rest': ''}
+            unit_presence = re.findall(f'{unit}+\s*', output_format)
+            if unit_presence:
+                output_format_attrs[unit]['digits'] = unit_presence[0].count(unit)
+                output_format_attrs[unit]['rest'] = unit_presence[0].replace(unit, '')
 
-        # Compact display: if nb of none-zero items > 2 than drop seconds.
-        # todo - simplify with while
-        duration_items = [(days, 'd'), (hours, 'h'), (minutes, 'm'), (seconds, 's')]
-        non_zero_items = 0
-        for item in duration_items:
-            if item[0] != 0:
-                non_zero_items += 1
-        if non_zero_items > 2:
-            duration_items.pop(-1)
-        # Final output
-        outcome = ''
-        for item in duration_items:
-            if item[0] != 0:
-                outcome += f'{int(item[0])}{item[1]} '
-        return outcome[:-1]
-
-# inputs = [timedelta(days=2, hours=22)]
-# for d in inputs:
-#     print(UtilsDataConversion.string_from_timedelta(d, 'hm'))
+        output_string = ''
+        for unit in output_format_attrs:
+            if output_format_attrs[unit]['digits'] > 0:
+                unit_value = int(input_timedelta // seconds_per_unit[unit])
+                if unit_value > 0 or (unit_value == 0 and show_units_with_zero):
+                    input_timedelta -= unit_value * seconds_per_unit[unit]
+                    output_string += f"{unit_value:0>{output_format_attrs[unit]['digits']}}{unit}{output_format_attrs[unit]['rest']}"
+        return output_string.strip()
 
 
 def string_from_float(x):
