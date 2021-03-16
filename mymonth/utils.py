@@ -101,6 +101,17 @@ class UtilsDataConversion:
                     output_string += f"{unit_value:0>{output_format_attrs[unit]['digits']}}{unit}{output_format_attrs[unit]['rest']}"
         return output_string.strip()
 
+    @staticmethod
+    def string_from_timedelta_subtraction(timedelta_1, timedelta_2):
+        # todo - UtilsDate
+        """Returns proper timedelta between 2 timedelta object.
+        It's needed to subtract bigger from smaller timedelta (inbuilt function does something strange)"""
+        delta_seconds = timedelta_1.total_seconds() - timedelta_2.total_seconds()
+        output_str = UtilsDataConversion.string_from_timedelta(timedelta(seconds=abs(delta_seconds)))
+        if delta_seconds < 0:
+            output_str = f"-{output_str}"
+        return output_str
+
 
 def string_from_float(x):
     # todo - UtilsDataConversion - check if model Days default_value set to zero affects it
@@ -141,20 +152,6 @@ def get_day_of_month_for_avg_sja(month_start_date, month_end_date):
     else:
         day_counter = month_start_date.day
     return day_counter
-
-
-def calc_proper_timedelta_difference(timedelta_1, timedelta_2):
-    # todo - UtilsDate
-    """Returns proper timedelta between 2 timedelta object. 
-    It's needed for subtracting bigger from smaller timedelta (inbuilt function does something strange)"""
-    delta_seconds = timedelta_1.total_seconds() - timedelta_2.total_seconds()
-
-    output_str = UtilsDataConversion.string_from_timedelta(timedelta(seconds=abs(delta_seconds)))
-
-    if delta_seconds < 0:
-        output_str = f"-{output_str}"
-
-    return output_str
 
 
 class MonthlyGraph:

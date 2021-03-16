@@ -6,7 +6,7 @@ from mymonth.models import Days, Settings, MonthlyTargets
 from mymonth.utils import UtilsDatetime, UtilsDataConversion
 from mymonth.utils import (string_from_float,
                            float_from_string, get_target_productive_hours_per_day, get_day_of_month_for_avg_sja,
-                           calc_proper_timedelta_difference, MonthlyGraph)
+                           MonthlyGraph)
 from mymonth.backup import get_initial_data_from_excel
 from bokeh.plotting import figure
 from bokeh.embed import components
@@ -138,13 +138,13 @@ def home():
     row_with_totals['total_tilltoday'] = timedelta(seconds=sum([row_with_totals[f"{hrscol}_tilltoday"].total_seconds() for hrscol in ['ds', 'dev', 'pol', 'ge', 'crt', 'hs']]))
 
     # Backlog (normal subtraction of timedelta does not work correctly if bigger is subtrackted from smaller object)
-    row_with_totals['ds_backlog'] = calc_proper_timedelta_difference(row_with_totals['ds'], row_with_totals['ds_tilltoday'])
-    row_with_totals['dev_backlog'] = calc_proper_timedelta_difference(row_with_totals['dev'], row_with_totals['dev_tilltoday'])
-    row_with_totals['pol_backlog'] = calc_proper_timedelta_difference(row_with_totals['pol'], row_with_totals['pol_tilltoday'])
-    row_with_totals['ge_backlog'] = calc_proper_timedelta_difference(row_with_totals['ge'], row_with_totals['ge_tilltoday'])
-    row_with_totals['crt_backlog'] = calc_proper_timedelta_difference(row_with_totals['crt'], row_with_totals['crt_tilltoday'])
-    row_with_totals['hs_backlog'] = calc_proper_timedelta_difference(row_with_totals['hs'], row_with_totals['hs_tilltoday'])
-    row_with_totals['total_backlog'] = calc_proper_timedelta_difference(row_with_totals['totalproductive'], row_with_totals['total_tilltoday'])
+    row_with_totals['ds_backlog'] = UtilsDataConversion.string_from_timedelta_subtraction(row_with_totals['ds'], row_with_totals['ds_tilltoday'])
+    row_with_totals['dev_backlog'] = UtilsDataConversion.string_from_timedelta_subtraction(row_with_totals['dev'], row_with_totals['dev_tilltoday'])
+    row_with_totals['pol_backlog'] = UtilsDataConversion.string_from_timedelta_subtraction(row_with_totals['pol'], row_with_totals['pol_tilltoday'])
+    row_with_totals['ge_backlog'] = UtilsDataConversion.string_from_timedelta_subtraction(row_with_totals['ge'], row_with_totals['ge_tilltoday'])
+    row_with_totals['crt_backlog'] = UtilsDataConversion.string_from_timedelta_subtraction(row_with_totals['crt'], row_with_totals['crt_tilltoday'])
+    row_with_totals['hs_backlog'] = UtilsDataConversion.string_from_timedelta_subtraction(row_with_totals['hs'], row_with_totals['hs_tilltoday'])
+    row_with_totals['total_backlog'] = UtilsDataConversion.string_from_timedelta_subtraction(row_with_totals['totalproductive'], row_with_totals['total_tilltoday'])
 
     # Change displayed month
     if request.method == 'POST':
