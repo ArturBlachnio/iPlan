@@ -4,9 +4,9 @@ from mymonth import app
 from mymonth.forms import DayEditForm, EditSettings, CalculatorSJAForm, EditMonthTargetsForm
 from mymonth.models import Days, Settings, MonthlyTargets
 from mymonth.utils import UtilsDatetime, UtilsDataConversion
-from mymonth.utils import (string_from_float,
-                           float_from_string, get_target_productive_hours_per_day, get_day_of_month_for_avg_sja,
-                           MonthlyGraph)
+from mymonth.datasets import get_day_of_month_for_avg_sja
+from mymonth.defaults import Defaults
+from mymonth.graphs import MonthlyGraph
 from mymonth.backup import get_initial_data_from_excel
 from bokeh.plotting import figure
 from bokeh.embed import components
@@ -65,7 +65,7 @@ def home():
 
     for i, day in enumerate(days, start=1):
         # Target Productive Hours depending on weekday
-        day.s_TargetHours = get_target_productive_hours_per_day(day.id)
+        day.s_TargetHours = Defaults.productive_hours_by_weekday(day.id)
 
         # Total Productive Time
         day.s_TotalProductive = timedelta(seconds=0)
@@ -195,7 +195,7 @@ def home():
     bokeh_monthly_script, bokeh_monthly_div = MonthlyGraph(Days).bokeh_monthly_components
 
     return render_template('home.html', days=days, f_string_from_duration=UtilsDataConversion.string_from_timedelta,
-                           f_string_from_float=string_from_float, form_settings=form_settings, settings=settings,
+                           f_string_from_float=UtilsDataConversion.string_from_float_none, form_settings=form_settings, settings=settings,
                            monthlytargets=monthlytargets, row_with_totals=row_with_totals,
                            bokeh_daily_script=bokeh_daily_script, bokeh_daily_div=bokeh_daily_div, f_round=round,
                            month_summary_table=month_summary_table,
@@ -218,7 +218,7 @@ def edit_day(id_day):
             sja3 = float(form_calc_sja.ml3.data * (form_calc_sja.perc3.data / 100)) / 12.5
             day.alk = round(sum([sja1, sja2, sja3]), 1)
             sja_values = dict(zip(['sja1', 'sja2', 'sja3'], [round(sja1, 2), round(sja2, 2), round(sja3, 2)]))
-            return render_template('edit_day.html', form_day=form_day, form_calc_sja=form_calc_sja, sja_values=sja_values, day=day, f_string_from_duration=UtilsDataConversion.string_from_timedelta, f_string_from_float=string_from_float)
+            return render_template('edit_day.html', form_day=form_day, form_calc_sja=form_calc_sja, sja_values=sja_values, day=day, f_string_from_duration=UtilsDataConversion.string_from_timedelta, f_string_from_float=UtilsDataConversion.string_from_float_none)
         else:
             # print(request.form)
             day.ds = UtilsDataConversion.timedelta_from_string(form_day.ds.data)
@@ -227,11 +227,11 @@ def edit_day(id_day):
             day.ge = UtilsDataConversion.timedelta_from_string(form_day.ge.data)
             day.crt = UtilsDataConversion.timedelta_from_string(form_day.crt.data)
             day.hs = UtilsDataConversion.timedelta_from_string(form_day.hs.data)
-            day.alk = float_from_string(form_day.alk.data)
+            day.alk = UtilsDataConversion.float_from_string(form_day.alk.data)
 
             db.session.commit()
             return redirect(url_for('home'))
-    return render_template('edit_day.html', form_day=form_day, form_calc_sja=form_calc_sja, sja_values=sja_values, day=day, f_string_from_duration=UtilsDataConversion.string_from_timedelta, f_string_from_float=string_from_float)
+    return render_template('edit_day.html', form_day=form_day, form_calc_sja=form_calc_sja, sja_values=sja_values, day=day, f_string_from_duration=UtilsDataConversion.string_from_timedelta, f_string_from_float=UtilsDataConversion.string_from_float_none)
 
 
 @app.route('/edit_month_target/<id_month>', methods=['GET', 'POST'])
@@ -248,13 +248,13 @@ def edit_month_target(id_month):
         monthly_targets.ge = UtilsDataConversion.timedelta_from_string(edit_month_targets_form.ge.data)
         monthly_targets.crt = UtilsDataConversion.timedelta_from_string(edit_month_targets_form.crt.data)
         monthly_targets.hs = UtilsDataConversion.timedelta_from_string(edit_month_targets_form.hs.data)
-        monthly_targets.alk = float_from_string(edit_month_targets_form.alk.data) 
-        monthly_targets.days0 = float_from_string(edit_month_targets_form.days0.data) 
+        monthly_targets.alk = UtilsDataConversion.float_from_string(edit_month_targets_form.alk.data)
+        monthly_targets.days0 = UtilsDataConversion.float_from_string(edit_month_targets_form.days0.data)
         db.session.commit() 
         return redirect(url_for('home')) 
 
     return render_template('edit_month_targets.html', edit_month_targets_form=edit_month_targets_form,
-                           monthly_targets=monthly_targets, f_string_from_duration=UtilsDataConversion.string_from_timedelta, f_string_from_float=string_from_float)
+                           monthly_targets=monthly_targets, f_string_from_duration=UtilsDataConversion.string_from_timedelta, f_string_from_float=UtilsDataConversion.string_from_float_none)
 
 
 @app.route('/export_to_excel')

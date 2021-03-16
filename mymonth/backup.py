@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 from mymonth.utils import UtilsDatetime, UtilsDataConversion
-from mymonth.utils import get_target_productive_hours_per_day
+from mymonth.defaults import Defaults
 from datetime import timedelta
 
 
@@ -43,7 +43,7 @@ def transform_historical_scores_into_daily_data(input_path, input_sheetname):
     df['negative_hrs'] = (df['sja'] - 2.86).clip(0) * timedelta(minutes=20)
 
     # Calculation of productive hours taking into account negative time from sja
-    df['target_hrs'] = df['date'].map(get_target_productive_hours_per_day)
+    df['target_hrs'] = df['date'].map(Defaults.productive_hours_by_weekday)
     df_positive_hrs_calc = df.groupby('month', as_index=False)[
         ['negative_hrs', 'target_hrs', 'score', 'nb_of_days']].agg(
         {'negative_hrs': sum, 'target_hrs': sum, 'score': np.mean, 'nb_of_days': max})
