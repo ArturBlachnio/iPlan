@@ -8,7 +8,7 @@ from mymonth.models import MonthlyTargets
 
 # todo - in classs make function returning sql_queries based on input time
 
-sql_query = "SELECT * FROM Days WHERE id between '2021-03-01' and '2021-03-31'"
+sql_query = "SELECT * FROM days WHERE id between '2021-03-01' and '2021-03-31'"
 parse_dates = ['id', 'ds', 'dev', 'pol', 'ge', 'crt', 'hs']
 df = pd.read_sql_query(sql=sql_query, con=db.engine, index_col='id', parse_dates=parse_dates)
 
