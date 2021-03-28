@@ -3,8 +3,10 @@ from datetime import date, timedelta
 import pandas as pd
 from bokeh.embed import components
 from bokeh.models import ColumnDataSource, Range1d, NumeralTickFormatter, LinearAxis, LabelSet
-from bokeh.plotting import figure
+from bokeh.plotting import figure, show, output_file
+
 from mymonth.defaults import Defaults
+from mymonth.datasets import DataSet
 
 
 class MonthlyGraph:
@@ -139,3 +141,55 @@ class MonthlyGraph:
         plot.add_layout(labels_day0)
         plot.add_layout(labels_ml_rank)
         return components(plot)
+
+
+class Graph:
+    @staticmethod
+    def get_graph_components_tracking_daily_time(input_df):
+        """Returns bokeh components for graph."""
+        df = input_df.copy()
+        source = ColumnDataSource(df)
+        plot = figure(title='Tracking Hours',
+                      y_range=source.data.get('date_str'),
+                      x_axis_label='Actual work vs target [hrs]',
+                      plot_width=400,
+                      plot_height=400)
+
+        plot.line(y='date_str', x='ds', source=source, line_color='#ccf1ff', line_width=3, legend_label='ds')
+        plot.line(y='date_str', x='dev', source=source, line_color='#e4e8eb', line_width=3, legend_label='dev')
+        plot.line(y='date_str', x='pol', source=source, line_color='antiquewhite', line_width=3, legend_label='pol')
+        plot.line(y='date_str', x='ge', source=source, line_color='darkseagreen', line_width=3, legend_label='ge')
+        plot.line(y='date_str', x='crt', source=source, line_color='lightblue', line_width=3, legend_label='crt')
+        plot.line(y='date_str', x='hs', source=source, line_color='#ebc6c6', line_width=3, legend_label='hs')
+
+        # display legend in top left corner (default is top right corner)
+        plot.legend.location = "top_right"
+        plot.legend.title = "Strategies:"
+        plot.legend.background_fill_alpha = 0.2
+        return components(plot)
+
+
+""" # This is for testing
+df = DataSet().tracking_df_daily_datetime
+print(df)
+
+source = ColumnDataSource(df)
+plot = figure(title='Tracking Hours',
+              y_range=source.data.get('date_str'),
+              plot_width=400,
+              plot_height=400)
+
+plot.line(y='date_str', x='ds', source=source, line_color='#ccf1ff', line_width=3, legend_label='ds')
+plot.line(y='date_str', x='dev', source=source, line_color='#e4e8eb', line_width=3, legend_label='dev')
+plot.line(y='date_str', x='pol', source=source, line_color='antiquewhite', line_width=3, legend_label='pol')
+plot.line(y='date_str', x='ge', source=source, line_color='darkseagreen', line_width=3, legend_label='ge')
+plot.line(y='date_str', x='crt', source=source, line_color='lightblue', line_width=3, legend_label='crt')
+plot.line(y='date_str', x='hs', source=source, line_color='#ebc6c6', line_width=3, legend_label='hs')
+
+# display legend in top left corner (default is top right corner)
+plot.legend.location = "top_left"
+plot.legend.title = "Strategies"
+
+output_file('test1.html')
+show(plot)"""
+

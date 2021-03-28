@@ -1,8 +1,9 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="graphs">
-    <div>{{ bokeh_daily_div | safe }}</div>
+    <div>{{ bokeh_bracking_time_div | safe }}</div>
     <div>{{ bokeh_monthly_div | safe }}</div>
+    <div>{{ bokeh_daily_div | safe }}</div>
 </div>
 <form method="POST" action="">
     {{ form_settings.hidden_tag() }}

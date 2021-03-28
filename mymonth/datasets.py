@@ -97,11 +97,12 @@ class DataSet:
     @staticmethod
     def _format_df_with_timedelta(input_df):
         """Formats and cleans dataframe with only datetime columns"""
+        df = input_df.copy()
         # Change NaN/NaT into zeros
-        input_df.fillna(datetime(1970, 1, 1), inplace=True)
+        df.fillna(datetime(1970, 1, 1), inplace=True)
         # Convert datetimes (data type used in db to keep intervals) to timedeltas
-        input_df = input_df - datetime(1970, 1, 1)
-        return input_df
+        df = df - datetime(1970, 1, 1)
+        return df
 
     def create_days_df_datetime(self):
         """Returns and cleans datetime columns from table days"""
@@ -133,8 +134,15 @@ class DataSet:
             df[column] = df[column].dt.total_seconds()/3600
         # Add total column
         df['total'] = df.sum(axis=1)
+        # Extra content for bokeh
+        # If ref_date is for current month, display only data till today
+        if df.index[0].strftime('%Ym%m') == date.today().strftime('%Ym%m'):
+            df = df[df.index <= datetime.today()]
+        # Date to display on axis
+        df['date_str'] = [i.strftime('%d %b') for i in df.index]
+        # Reindex to see start of month on top
+        df.sort_index(ascending=False, inplace=True)
         return df
-
 
 
 def get_day_of_month_for_avg_sja(month_start_date, month_end_date):
