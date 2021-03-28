@@ -22,7 +22,7 @@
             <td>{{ form_day.ge(style="width: 80px", value=f_string_from_duration(day.ge)) }}</td>
             <td>{{ form_day.crt(style="width: 80px", value=f_string_from_duration(day.crt)) }}</td>
             <td>{{ form_day.hs(style="width: 80px", value=f_string_from_duration(day.hs)) }}</td>
-            <td>{{ form_day.alk(style="width: 80px", value=f_string_from_float(day.alk)) }}</td>
+            <td>{{ form_day.alk(style="width: 80px", value=f_string_from_float(day.alk), placeholder=0.0) }}</td>
             <td>{{ form_day.submit(class="btn_edit_day_save") }}</td>
         </tr>
         <!-- SJA calculation form -->

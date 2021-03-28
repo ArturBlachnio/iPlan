@@ -1,8 +1,9 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="graphs">
-    <div>{{ bokeh_daily_div | safe }}</div>
+    <div>{{ bokeh_bracking_time_div | safe }}</div>
     <div>{{ bokeh_monthly_div | safe }}</div>
+    <div>{{ bokeh_daily_div | safe }}</div>
 </div>
 <form method="POST" action="">
     {{ form_settings.hidden_tag() }}
@@ -50,30 +51,30 @@
     <tfoot>
         <tr>
             <th>Total</th>
-            <th>{{ f_string_from_duration(row_with_totals.targethours, 'hm') }}</th>
-            <th>{{ f_string_from_duration(row_with_totals.ds, 'hm') }}</th>
-            <th>{{ f_string_from_duration(row_with_totals.dev, 'hm') }}</th>
-            <th>{{ f_string_from_duration(row_with_totals.pol, 'hm') }}</th>
-            <th>{{ f_string_from_duration(row_with_totals.ge, 'hm') }}</th>
-            <th>{{ f_string_from_duration(row_with_totals.crt, 'hm') }}</th>
-            <th>{{ f_string_from_duration(row_with_totals.hs, 'hm') }}</th>
-            <th>{{ f_string_from_duration(row_with_totals.totalproductive, 'hm') }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.targethours, 'h m') }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.ds, 'h mm', show_units_with_zero=True) }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.dev, 'h mm', show_units_with_zero=True) }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.pol, 'h mm', show_units_with_zero=True) }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.ge, 'h mm', show_units_with_zero=True) }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.crt, 'h mm', show_units_with_zero=True) }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.hs, 'h mm', show_units_with_zero=True) }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.totalproductive, 'h mm', show_units_with_zero=True) }}</th>
             <th></th>
             <th></th>
-            <th>{{ f_string_from_duration(row_with_totals.totalnegative, 'hm') }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.totalnegative, 'h m') }}</th>
             <th>{{ row_with_totals.totalsja }}</th>
             <th>{{ row_with_totals.totalml }}</th>
         </tr>
         <tr>
             <th>Plan-Today</th>
-            <th>{{ f_string_from_duration(row_with_totals.targethours_tilltoday, 'hm') }}</th>
-            <th>{{ f_string_from_duration(row_with_totals.ds_tilltoday, 'hm') }}</th>
-            <th>{{ f_string_from_duration(row_with_totals.dev_tilltoday, 'hm') }}</th>
-            <th>{{ f_string_from_duration(row_with_totals.pol_tilltoday, 'hm') }}</th>
-            <th>{{ f_string_from_duration(row_with_totals.ge_tilltoday, 'hm') }}</th>
-            <th>{{ f_string_from_duration(row_with_totals.crt_tilltoday, 'hm') }}</th>
-            <th>{{ f_string_from_duration(row_with_totals.hs_tilltoday, 'hm') }}</th>
-            <th>{{ f_string_from_duration(row_with_totals.total_tilltoday, 'hm') }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.targethours_tilltoday, 'h m') }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.ds_tilltoday, 'h m') }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.dev_tilltoday, 'h m') }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.pol_tilltoday, 'h m') }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.ge_tilltoday, 'h m') }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.crt_tilltoday, 'h m') }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.hs_tilltoday, 'h m') }}</th>
+            <th>{{ f_string_from_duration(row_with_totals.total_tilltoday, 'h m') }}</th>
             <th></th>
             <th></th>
             <th>0-Days</th>
@@ -99,13 +100,13 @@
         <tr>
             <th>Targets</th>
             <th></th>
-            <th>{{ f_string_from_duration(monthlytargets.ds, 'hm') }}</th>
-            <th>{{ f_string_from_duration(monthlytargets.dev, 'hm') }}</th>
-            <th>{{ f_string_from_duration(monthlytargets.pol, 'hm') }}</th>
-            <th>{{ f_string_from_duration(monthlytargets.ge, 'hm') }}</th>
-            <th>{{ f_string_from_duration(monthlytargets.crt, 'hm') }}</th>
-            <th>{{ f_string_from_duration(monthlytargets.hs, 'hm') }}</th>
-            <th>{{ f_string_from_duration(monthlytargets.total_allocated, 'hm') }}</th>
+            <th>{{ f_string_from_duration(monthlytargets.ds, 'h m') }}</th>
+            <th>{{ f_string_from_duration(monthlytargets.dev, 'h m') }}</th>
+            <th>{{ f_string_from_duration(monthlytargets.pol, 'h m') }}</th>
+            <th>{{ f_string_from_duration(monthlytargets.ge, 'h m') }}</th>
+            <th>{{ f_string_from_duration(monthlytargets.crt, 'h m') }}</th>
+            <th>{{ f_string_from_duration(monthlytargets.hs, 'h m') }}</th>
+            <th>{{ f_string_from_duration(monthlytargets.total_allocated, 'h m') }}</th>
             <th><a href="{{ url_for('edit_month_target', id_month=monthlytargets.id) }}">Edit</a></th>  
             <th></th>
             <th>{{ monthlytargets.days0 }}</th>         

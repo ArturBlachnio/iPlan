@@ -2,11 +2,12 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.fields.html5 import DateField, IntegerField, DecimalField
 
+
 class DayEditForm(FlaskForm):
     id = DateField(label='Date')
     ds = StringField(label='Data Science')
     dev = StringField(label='Developer')
-    pol = StringField(label='Poliglote')
+    pol = StringField(label='Polyglot')
     ge = StringField(label='Gentleman Explorer')
     crt = StringField(label='Create, Think, Read')
     hs = StringField(label='Home, Son')
@@ -33,7 +34,7 @@ class EditMonthTargetsForm(FlaskForm):
     id = DateField(label='Month')
     ds = StringField(label='Data Science')
     dev = StringField(label='Developer')
-    pol = StringField(label='Poliglote')
+    pol = StringField(label='Polyglot')
     ge = StringField(label='Gentleman Explorer')
     crt = StringField(label='Create, Think, Read')
     hs = StringField(label='Home, Son')
