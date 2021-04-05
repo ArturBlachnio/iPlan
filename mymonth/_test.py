@@ -1,9 +1,6 @@
 import pandas as pd
+import numpy as npt
 from mymonth.datasets import DataSet
-from datetime import datetime
+from datetime import datetime, date
 
-ds = DataSet()
-
-df = ds.tracking_df_daily_datetime
-
-df[df.index < datetime.today()]
+ds = DataSet(date(2021, 3, 1))

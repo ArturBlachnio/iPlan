@@ -4,8 +4,9 @@
 """
 from datetime import date, datetime
 import pandas as pd
+import numpy as np
 from mymonth import db
-from mymonth.utils import UtilsDatetime
+from mymonth.utils import UtilsDatetime, UtilsDataConversion as udc
 
 pd.options.display.expand_frame_repr = False
 pd.options.display.min_rows = 31
@@ -51,6 +52,7 @@ class DataSet:
 
         # Tracking tables
         self.tracking_df_daily_datetime = self.create_tracking_df_daily_datetime()
+        self.tracking_current_score_series = self.create_tracking_current_score_series()
         self.tracking_df_daily_numeric = None
 
     def get_sql_statement(self, table, columns=None, use_reference_date=False, filter_dates_column='id',
@@ -133,7 +135,7 @@ class DataSet:
         for column in self.tracking_columns_datetime:
             df[column] = df[column].dt.total_seconds()/3600
         # Add total column
-        df['total'] = df.sum(axis=1)
+        df['all'] = df.sum(axis=1)
         # Extra content for bokeh
         # If ref_date is for current month, display only data till today
         if df.index[0].strftime('%Ym%m') == date.today().strftime('%Ym%m'):
@@ -143,6 +145,13 @@ class DataSet:
         # Reindex to see start of month on top
         df.sort_index(ascending=False, inplace=True)
         return df
+
+    def create_tracking_current_score_series(self):
+        current_score = np.ceil(self.tracking_df_daily_datetime.select_dtypes('number').iloc[0] * 60).astype(int)
+        current_score_sign = np.sign(current_score).map(lambda x: '-' if x < 0 else '+')
+        current_score = (abs(current_score).astype(str)+'m').map(udc.timedelta_from_string).map(udc.string_from_timedelta)
+        current_score = current_score_sign + current_score
+        return current_score
 
 
 def get_day_of_month_for_avg_sja(month_start_date, month_end_date):

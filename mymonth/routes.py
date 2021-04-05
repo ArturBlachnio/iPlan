@@ -193,7 +193,8 @@ def home():
     # Monthly graph
     month_summary_table = MonthlyGraph(Days).df_months.to_html()
     bokeh_monthly_script, bokeh_monthly_div = MonthlyGraph(Days).bokeh_monthly_components
-    bokeh_tracking_time_script, bokeh_bracking_time_div = Graph.get_graph_components_tracking_daily_time(DataSet(ref_date).tracking_df_daily_datetime)
+    dataset_for_daily_tracking = DataSet(ref_date)
+    bokeh_tracking_time_script, bokeh_bracking_time_div = Graph.get_graph_components_tracking_daily_time(dataset_for_daily_tracking.tracking_df_daily_datetime, dataset_for_daily_tracking.tracking_current_score_series)
 
     return render_template('home.html', days=days, f_string_from_duration=UtilsDataConversion.string_from_timedelta,
                            f_string_from_float=UtilsDataConversion.string_from_float_none, form_settings=form_settings, settings=settings,

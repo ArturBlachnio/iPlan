@@ -1,12 +1,14 @@
 # todo - create proper classes
 from datetime import date, timedelta
 import pandas as pd
+import numpy as np
 from bokeh.embed import components
 from bokeh.models import ColumnDataSource, Range1d, NumeralTickFormatter, LinearAxis, LabelSet
 from bokeh.plotting import figure, show, output_file
 
 from mymonth.defaults import Defaults
 from mymonth.datasets import DataSet
+from mymonth.utils import UtilsDataConversion as udc
 
 
 class MonthlyGraph:
@@ -145,27 +147,39 @@ class MonthlyGraph:
 
 class Graph:
     @staticmethod
-    def get_graph_components_tracking_daily_time(input_df):
+    def get_graph_components_tracking_daily_time(input_df, score=None):
         """Returns bokeh components for graph."""
         df = input_df.copy()
         source = ColumnDataSource(df)
         plot = figure(title='Tracking Hours',
                       y_range=source.data.get('date_str'),
                       x_axis_label='Actual work vs target [hrs]',
-                      plot_width=400,
+                      plot_width=500,
                       plot_height=400)
 
-        plot.line(y='date_str', x='ds', source=source, line_color='#ccf1ff', line_width=3, legend_label='ds')
-        plot.line(y='date_str', x='dev', source=source, line_color='#e4e8eb', line_width=3, legend_label='dev')
-        plot.line(y='date_str', x='pol', source=source, line_color='antiquewhite', line_width=3, legend_label='pol')
-        plot.line(y='date_str', x='ge', source=source, line_color='darkseagreen', line_width=3, legend_label='ge')
-        plot.line(y='date_str', x='crt', source=source, line_color='lightblue', line_width=3, legend_label='crt')
-        plot.line(y='date_str', x='hs', source=source, line_color='#ebc6c6', line_width=3, legend_label='hs')
+        plot.line(y='date_str', x='ds', source=source, line_color='#ccf1ff', line_width=3, legend_label='ds:'.ljust(5) + score["ds"].rjust(8))
+        plot.line(y='date_str', x='dev', source=source, line_color='#e4e8eb', line_width=3, legend_label='dev:'.ljust(5) + score["dev"].rjust(8))
+        plot.line(y='date_str', x='pol', source=source, line_color='antiquewhite', line_width=3, legend_label='pol:'.ljust(5) + score["pol"].rjust(8))
+        plot.line(y='date_str', x='ge', source=source, line_color='darkseagreen', line_width=3, legend_label='ge:'.ljust(5) + score["ge"].rjust(8))
+        plot.line(y='date_str', x='crt', source=source, line_color='lightblue', line_width=3, legend_label='crt:'.ljust(5) + score["crt"].rjust(8))
+        plot.line(y='date_str', x='hs', source=source, line_color='#ebc6c6', line_width=3, legend_label='hs:'.ljust(5) + score["hs"].rjust(8))
+        plot.line(y='date_str', x='all', source=source, line_color='#696969', line_width=3, legend_label='all:'.ljust(5) + score["all"].rjust(8))
 
-        # display legend in top left corner (default is top right corner)
+        # Display legend in top left corner (default is top right corner)
         plot.legend.location = "top_right"
+        plot.legend.click_policy="hide"
+        plot.legend.label_text_font = "times"
         plot.legend.title = "Strategies:"
-        plot.legend.background_fill_alpha = 0.2
+        plot.legend.title_text_font_style = 'bold'
+        plot.legend.background_fill_alpha = 0.9
+        plot.legend.background_fill_color = 'white'
+        plot.legend.label_text_font_style = 'bold'
+        plot.legend.label_height = 10
+        plot.legend.spacing = 1
+        plot.legend.glyph_height = 10
+        plot.legend.border_line_width = 1
+        plot.legend.border_line_color = "black"
+        plot.legend.border_line_alpha = 0.25
         return components(plot)
 
 
