@@ -9,6 +9,7 @@ from bokeh.plotting import figure, show, output_file
 from mymonth.defaults import Defaults
 from mymonth.datasets import DataSet
 from mymonth.utils import UtilsDataConversion as udc
+from mymonth.utils import mapper_suffix_to_day
 
 
 class MonthlyGraph:
@@ -110,7 +111,10 @@ class MonthlyGraph:
         df_month['labels_ml'] = df_month['ml'].astype(int).astype(str)
         df_month['labels_day0'] = df_month['day0'].astype(int).astype(str)
         df_month['ml_current'] = df_month['ml'].values[-1]
-        df_month['ml_rank'] = df_month['ml'].rank().astype(int).map({1: '1st', 2: '2nd', 3: '3rd', 4: '4th', 5: '5th'}).fillna('')
+        df_month['ml_rank'] = df_month['ml'].rank().astype(int)
+        mask_to_display_ranks = (df_month['ml_rank'] <= 5) | (df_month.index == df_month.index[-1])
+        df_month.loc[mask_to_display_ranks, 'ml_rank'] = df_month['ml_rank'].map(mapper_suffix_to_day).fillna('')
+        df_month.loc[~mask_to_display_ranks, 'ml_rank'] = ''
         source = ColumnDataSource(df_month)
         plot = figure(title='Monthly summary',
                       x_range=source.data.get('month'),

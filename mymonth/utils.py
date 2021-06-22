@@ -121,3 +121,16 @@ class UtilsDataConversion:
         if input_string == '':
             input_string = None
         return input_string
+
+    @staticmethod
+    def suffix_to_day_of_month(input_day_number: int = None) -> str:
+        if input_day_number is None:
+            return ''
+        special_suffixed = {'st': [1, 21, 31], 'nd': [2, 22], 'rd': [3, 23]}
+        for k, v in special_suffixed.items():
+            if input_day_number in v:
+                return f'{input_day_number}{k}'
+        return f'{input_day_number}th'
+
+
+mapper_suffix_to_day = {k: UtilsDataConversion.suffix_to_day_of_month(k) for k in range(1, 32)}
